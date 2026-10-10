@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>베이비 팩토리</title>
+<meta name="description" content="독서갱 북콘서트 체험 부스 · 맞춤아기 시뮬레이터">
+<meta name="theme-color" content="#1E2A47">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23FFD23F'/%3E%3Ccircle cx='32' cy='34' r='18' fill='%23F8DDC8' stroke='%231E2A47' stroke-width='4'/%3E%3Ccircle cx='25' cy='35' r='3' fill='%231E2A47'/%3E%3Ccircle cx='39' cy='35' r='3' fill='%231E2A47'/%3E%3Cpath d='M27 43q5 4 10 0' stroke='%231E2A47' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+<link rel="stylesheet" href="css/style.css?v=20261010">
+</head>
+<body>
+
+<div id="viewport">
+  <div id="stage">
+
+    <div class="util-bar">
+      <button class="util" id="btn-sound" title="효과음 켜기/끄기" aria-label="효과음"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+      <button class="util" id="btn-full" title="전체 화면" aria-label="전체 화면"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
+      <button class="util" id="btn-settings" title="운영자 설정" aria-label="운영자 설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg></button>
+    </div>
+
+    <!-- ============ 0. 타이틀 ============ -->
+    <section class="screen is-on" id="s-title">
+      <div class="sign">
+        <div class="sign-bulbs" aria-hidden="true"></div>
+        <p class="sign-eyebrow">독서갱 북콘서트 체험 부스</p>
+        <h1 class="logo">베이비 팩토리</h1>
+        <p class="sign-sub">BABY FACTORY · 맞춤아기 제작소 · 주문 접수 중</p>
+      </div>
+      <p class="title-q">병을 막으려는 선택과 키·지능을 고르는 선택,<br>둘은 같은 걸까요?</p>
+      <div class="title-actions">
+        <button class="btn btn-big" id="btn-start">주문 시작하기</button>
+        <button class="btn btn-ghost" id="btn-explain">맞춤아기란?</button>
+      </div>
+      <div class="conveyor" aria-hidden="true">
+        <div class="belt-items" id="belt"></div>
+        <div class="belt"><i></i></div>
+      </div>
+      <footer class="title-foot">
+        <span>주제 도서 『맞춤아기, 누구의 권리일까?』 존 블리스</span>
+        <span>2026 인문학의 날 독서클럽 북콘서트 · 독서갱</span>
+      </footer>
+    </section>
+
+    <!-- ============ 1. 예산 ============ -->
+    <section class="screen" id="s-budget">
+      <header class="scr-head">
+        <span class="step">STEP 1 · 예산</span>
+        <h2>오늘 당신의 전 재산은?</h2>
+        <p>룰렛에서 나온 금액을 입력하세요. 이 돈이 아기를 설계할 수 있는 전부예요.</p>
+      </header>
+      <div class="budget-wrap">
+        <div class="atm panel">
+          <div class="atm-screen">
+            <span class="atm-label">보유 자산</span>
+            <output id="budget-out">0원</output>
+          </div>
+          <label class="atm-input" for="budget-in">
+            <input id="budget-in" type="text" inputmode="numeric" autocomplete="off" maxlength="9" placeholder="금액 입력">
+            <span>만원</span>
+          </label>
+          <p class="atm-hint">룰렛 칸을 눌러도 돼요</p>
+          <div class="presets" id="presets"></div>
+          <button class="btn btn-ghost btn-sm" id="btn-roulette">화면에서 룰렛 돌리기</button>
+        </div>
+        <aside class="budget-side">
+          <div class="rules panel">
+            <h3>설계 규칙</h3>
+            <ol>
+              <li><b>5분</b> 안에 아기의 특성을 골라요. 시간이 끝나면 그때까지 고른 대로 태어나요.</li>
+              <li>고를 때마다 값을 치러요. 돈이 모자라면 고를 수 없어요.</li>
+              <li>"자연에 맡기기"는 무료예요. 결과는 태어나야 알 수 있어요.</li>
+              <li>다 고르면 아기가 태어나 노인이 될 때까지의 삶을 보여 드려요.</li>
+            </ol>
+          </div>
+          <p class="disclaimer" id="disclaimer-budget"></p>
+          <button class="btn btn-big" id="btn-budget-ok" disabled>이 돈으로 설계 시작</button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ 2. 유전자 검사 ============ -->
+    <section class="screen" id="s-scan">
+      <header class="scr-head">
+        <span class="step">STEP 2 · 검사</span>
+        <h2>부모 유전자 검사</h2>
+        <p>아기에게 물려질 수 있는 유전질환·장애를 검사하고 있어요.</p>
+      </header>
+      <div class="scan-wrap">
+        <div class="dna panel"><svg id="dna" viewBox="0 0 260 520" aria-hidden="true"></svg><div class="scanline"></div></div>
+        <ol class="scan-list" id="scan-list"></ol>
+      </div>
+      <div class="scan-foot">
+        <p id="scan-sum"></p>
+        <button class="btn btn-big" id="btn-scan-ok" hidden>설계 시작 · 타이머 5:00</button>
+      </div>
+    </section>
+
+    <!-- ============ 3. 설계 (5분) ============ -->
+    <section class="screen" id="s-design">
+      <header class="d-head">
+        <div class="d-brand">
+          <button class="home-btn" data-home title="처음으로">베이비 팩토리</button>
+          <span id="d-order">주문 No.0001</span>
+        </div>
+        <div class="timer" id="timer" role="timer" aria-live="off">
+          <span class="timer-label">남은 설계 시간</span>
+          <span class="timer-digits" id="timer-digits">5:00</span>
+          <div class="timer-bar"><i id="timer-fill"></i></div>
+        </div>
+        <div class="wallet">
+          <span class="wallet-label">남은 돈</span>
+          <strong id="wallet-left">0원</strong>
+          <span class="wallet-sub" id="wallet-sub"></span>
+        </div>
+      </header>
+      <div class="d-body">
+        <div class="d-left">
+          <nav class="tabs" id="tabs" role="tablist"></nav>
+          <div class="trait-list" id="trait-list"></div>
+        </div>
+        <div class="d-right">
+          <div class="incubator panel" id="incubator">
+            <div class="inc-head">
+              <span class="inc-title">인큐베이터 미리보기</span>
+              <span class="inc-sub">예상 모습 · 성별은 태어날 때 정해져요</span>
+              <button class="inc-zoom" id="btn-zoom">얼굴 크게</button>
+            </div>
+            <div class="inc-glass">
+              <div class="bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <svg id="preview" preserveAspectRatio="xMidYMax meet"></svg>
+            </div>
+            <div class="age-tabs" id="age-tabs"></div>
+          </div>
+          <div class="order panel">
+            <div class="ethic-note" id="ethic-note" hidden><b id="ethic-tag"></b><p id="ethic-text"></p></div>
+            <div class="order-head"><span>주문서</span><small id="order-count">0개</small></div>
+            <ul class="order-list" id="order-list"></ul>
+            <div class="order-total"><span>합계</span><strong id="order-total">0원</strong></div>
+            <button class="btn btn-big btn-pink" id="btn-checkout">결제하고 출산하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4. 탄생 ============ -->
+    <section class="screen" id="s-birth">
+      <div class="birth-lights" aria-hidden="true"></div>
+      <div class="pod-wrap">
+        <div class="pod" id="pod">
+          <div class="pod-cap"></div>
+          <div class="pod-body">
+            <svg id="pod-baby" viewBox="-40 -66 80 72" aria-hidden="true"></svg>
+            <div class="pod-door l"></div><div class="pod-door r"></div>
+          </div>
+          <div class="pod-base"><span id="pod-label">EDITING</span></div>
+        </div>
+        <div class="pod-status" id="pod-status">결제 완료</div>
+        <div class="pod-steps" id="pod-steps"></div>
+      </div>
+      <div class="reveal panel" id="reveal" hidden>
+        <p class="reveal-eyebrow">출생 신고서</p>
+        <h2 id="reveal-title"></h2>
+        <ul class="reveal-list" id="reveal-list"></ul>
+        <button class="btn btn-big" id="btn-life">인생 재생 ▶</button>
+      </div>
+    </section>
+
+    <!-- ============ 5. 성장 ============ -->
+    <section class="screen" id="s-life">
+      <svg id="life-svg" aria-hidden="true"></svg>
+      <div class="life-hud panel">
+        <div class="life-name" id="life-name"></div>
+        <div class="life-age"><span id="life-age">0</span><small>세</small></div>
+        <div class="life-meta"><span class="chip" id="life-stage">신생아</span><span id="life-year">2026년</span></div>
+      </div>
+      <div class="life-log" id="life-log" aria-live="polite"></div>
+      <div class="life-bar"><div class="life-track" id="life-track"><i id="life-fill"></i><b id="life-dot"></b></div></div>
+      <div class="life-ctrl">
+        <button id="btn-pause">일시정지</button>
+        <button id="btn-speed">2배속</button>
+        <button id="btn-skip">끝으로 건너뛰기</button>
+      </div>
+    </section>
+
+    <!-- ============ 6. 결과 ============ -->
+    <section class="screen" id="s-result">
+      <div class="res-left">
+        <header class="res-head">
+          <span class="step">인생 요약</span>
+          <h2 id="res-title"></h2>
+        </header>
+        <div class="film" id="film"></div>
+        <div class="res-stats" id="res-stats"></div>
+        <div class="res-money panel" id="res-money"></div>
+      </div>
+      <div class="res-right panel">
+        <p class="qr-eyebrow">결과 QR · 찍어 가세요</p>
+        <div class="qr-box" id="qr-box"></div>
+        <div class="qr-url"><code id="qr-url"></code><button class="btn btn-sm" id="btn-copy">주소 복사</button></div>
+        <p class="qr-warn" id="qr-warn" hidden></p>
+        <div class="qr-actions">
+          <button class="btn btn-sm btn-ghost" id="btn-print">라벨 인쇄</button>
+          <button class="btn btn-sm btn-ghost" id="btn-qr-png">라벨 이미지</button>
+          <button class="btn btn-sm btn-ghost" id="btn-card-png">결과 카드</button>
+        </div>
+        <div class="res-q">
+          <b>나가기 전에 찬반 스티커 투표!</b>
+          <p id="res-vote"></p>
+        </div>
+        <button class="btn btn-big" id="btn-next">다음 참가자</button>
+      </div>
+    </section>
+
+    <!-- ============ 모달 ============ -->
+    <div class="modal" id="m-checkout" hidden>
+      <div class="modal-card checkout panel">
+        <div class="receipt" id="receipt"></div>
+        <div class="checkout-side">
+          <h3>출생 신고서</h3>
+          <label class="field" for="baby-name">아기 이름
+            <span class="name-row"><input id="baby-name" type="text" maxlength="6" autocomplete="off"><button class="btn btn-sm btn-ghost" id="btn-rename" type="button">다른 이름</button></span>
+          </label>
+          <p class="checkout-note" id="checkout-note"></p>
+          <div class="checkout-btns">
+            <button class="btn btn-ghost" id="btn-back">더 고르기</button>
+            <button class="btn btn-big btn-pink" id="btn-pay">결제 · 출산</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="m-explain" hidden>
+      <div class="modal-card explain panel">
+        <div class="ex-slides" id="ex-slides">
+          <article class="ex-slide is-on">
+            <span class="step">1 / 3</span>
+            <h3>맞춤아기란?</h3>
+            <p>유전자 기술로 태어날 아기의 유전질환을 막거나, 부모가 원하는 외모·몸·능력을 고른 아기예요.</p>
+            <p>유전자 가위(CRISPR)가 발전하면서 배아의 DNA를 직접 고치는 일이 기술적으로 가능해졌어요.</p>
+          </article>
+          <article class="ex-slide">
+            <span class="step">2 / 3</span>
+            <h3>2018년, 실제로 일어난 일</h3>
+            <p>중국의 과학자 허젠쿠이가 HIV에 걸리지 않도록 CCR5 유전자를 편집한 쌍둥이를 탄생시켰어요.</p>
+            <p>전 세계 과학자들이 비판했고, 그는 징역 3년을 선고받았어요. 우리나라 생명윤리법도 배아·태아의 유전자 치료를 금지해요.</p>
+          </article>
+          <article class="ex-slide">
+            <span class="step">3 / 3</span>
+            <h3>오늘의 질문</h3>
+            <p class="ex-q" id="ex-q"></p>
+            <p>병을 막는 선택과 키·지능을 고르는 선택은 같은 걸까요? 직접 아기를 설계하며 생각해 보세요.</p>
+          </article>
+        </div>
+        <div class="ex-nav">
+          <button class="btn btn-ghost btn-sm" id="ex-prev">이전</button>
+          <button class="btn btn-sm" id="ex-next">다음</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="m-roulette" hidden>
+      <div class="modal-card roulette panel">
+        <h3>예산 룰렛</h3>
+        <div class="wheel-wrap"><canvas id="wheel" width="560" height="560"></canvas><div class="wheel-pin"></div></div>
+        <p class="wheel-result" id="wheel-result">버튼을 눌러 돌려 주세요</p>
+        <div class="checkout-btns">
+          <button class="btn btn-ghost" id="btn-wheel-close">닫기</button>
+          <button class="btn btn-big" id="btn-spin">돌리기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="m-confirm" hidden>
+      <div class="modal-card confirm panel">
+        <h3 id="confirm-title">처음으로 돌아갈까요?</h3>
+        <p id="confirm-text">지금까지 고른 내용은 사라져요.</p>
+        <div class="checkout-btns">
+          <button class="btn btn-ghost" id="btn-confirm-no">계속하기</button>
+          <button class="btn btn-pink" id="btn-confirm-yes">처음으로</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="m-settings" hidden>
+      <div class="modal-card settings panel">
+        <h3>운영자 설정</h3>
+        <div class="set-grid">
+          <label class="field" for="set-presets">룰렛 칸 금액 <small>만원 단위, 쉼표로 구분</small>
+            <input id="set-presets" type="text" autocomplete="off">
+          </label>
+          <label class="field" for="set-timer">설계 시간 <small>초 · 기본 300초(5분)</small>
+            <input id="set-timer" type="number" min="30" max="1800" step="10">
+          </label>
+          <label class="field wide" for="set-base">결과 페이지 주소 <small>QR에 들어갈 주소. 휴대폰에서 열리는 https 주소여야 해요</small>
+            <input id="set-base" type="url" autocomplete="off" placeholder="예: https://아이디.github.io/baby-factory/">
+            <span class="set-hint" id="set-base-hint"></span>
+          </label>
+          <label class="field" for="set-label">라벨 크기
+            <select id="set-label">
+              <option value="50x30">50 × 30 mm</option>
+              <option value="40x30">40 × 30 mm</option>
+              <option value="50x50">50 × 50 mm</option>
+              <option value="40x40">40 × 40 mm</option>
+              <option value="30x20">30 × 20 mm</option>
+            </select>
+          </label>
+          <div class="field">기타
+            <label class="check" for="set-guarantee"><input id="set-guarantee" type="checkbox"> 유전자 검사에서 최소 1개 발견</label>
+            <label class="check" for="set-sound"><input id="set-sound" type="checkbox"> 효과음</label>
+          </div>
+          <div class="field wide">오늘 기록 <small id="set-count"></small>
+            <button class="btn btn-sm btn-ghost" id="btn-reset-count" type="button">주문 번호 1번부터 다시</button>
+          </div>
+        </div>
+        <div class="checkout-btns">
+          <button class="btn btn-ghost" id="btn-set-cancel">취소</button>
+          <button class="btn" id="btn-set-save">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeup" id="o-timeup" hidden><span>시간 종료!</span><small>지금까지 고른 대로 태어나요</small></div>
+    <div class="toast" id="toast" hidden></div>
+  </div>
+</div>
+
+<!-- ============ 휴대폰 결과 페이지 (QR) ============ -->
+<div id="viewer" hidden></div>
+
+<!-- 라벨 인쇄용 -->
+<div id="print-area" aria-hidden="true"></div>
+<style id="page-style"></style>
+
+<script src="js/util.js?v=20261010"></script>
+<script src="js/data.js?v=20261010"></script>
+<script src="js/qr.js?v=20261010"></script>
+<script src="js/sim.js?v=20261010"></script>
+<script src="js/person.js?v=20261010"></script>
+<script src="js/stage.js?v=20261010"></script>
+<script src="js/sound.js?v=20261010"></script>
+<script src="js/card.js?v=20261010"></script>
+<script src="js/viewer.js?v=20261010"></script>
+<script src="js/app.js?v=20261010"></script>
+</body>
+</html>
