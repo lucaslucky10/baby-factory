@@ -115,6 +115,7 @@ var BF = window.BF || (window.BF = {});
       expression = /무사히|가족|곁에서/.test(text) ? 'gentle' : action === 'think' ? 'thoughtful' : 'concerned';
       prop = null;
     }
+    else if (/휠체어.*(공원|코스|경주|릴레이)|무장애 숲길/.test(text)) { action = 'roll'; expression = /경주|릴레이|코스/.test(text) ? 'focused' : 'smile'; }
     else if (prop === 'baby') { action = 'cradle'; expression = 'gentle'; }
     else if (prop === 'book' || prop === 'pencil') { action = 'read'; expression = 'focused'; }
     else if (prop === 'mic' || prop === 'note') { action = 'perform'; expression = 'singing'; }
@@ -209,8 +210,8 @@ var BF = window.BF || (window.BF = {});
     }
     var hy = gy - H * s;
     var seated = BF.Person.look(o, age, {}).wheelchair;
-    r += '<line x1="' + f(x + 34) + '" y1="' + f(hy) + '" x2="' + f(this.fx - 20) + '" y2="' + f(hy) + '" stroke="#EF4B3C" stroke-width="3" stroke-dasharray="10 8"' + (seated ? ' opacity="0.55"' : '') + '/>';
-    r += '<g transform="translate(' + f(x + 40) + ' ' + f(hy - 44) + ')"><rect width="150" height="40" rx="10" fill="#EF4B3C" stroke="' + INK + '" stroke-width="3"/><text x="75" y="28" text-anchor="middle" font-family="Nanum Gothic Coding, monospace" font-weight="700" font-size="22" fill="#FFFDF5">' + H.toFixed(1) + 'cm</text></g>';
+    if (!seated) r += '<line x1="' + f(x + 34) + '" y1="' + f(hy) + '" x2="' + f(this.fx - 20) + '" y2="' + f(hy) + '" stroke="#EF4B3C" stroke-width="3" stroke-dasharray="10 8"/>';
+    r += '<g transform="translate(' + f(x + 40) + ' ' + f(seated ? this.top + 12 : hy - 44) + ')"><rect width="' + (seated ? 190 : 150) + '" height="40" rx="10" fill="#EF4B3C" stroke="' + INK + '" stroke-width="3"/><text x="' + (seated ? 95 : 75) + '" y="28" text-anchor="middle" font-family="Nanum Gothic Coding, monospace" font-weight="700" font-size="22" fill="#FFFDF5">' + (seated ? '신장 ' : '') + H.toFixed(1) + 'cm</text>' + (seated ? '<text x="95" y="64" text-anchor="middle" font-family="sans-serif" font-size="20" fill="' + INK + '">현재 앉은 모습</text>' : '') + '</g>';
     this.rulerEl.innerHTML = r;
     this.age = age;
     this.onTick(age, H);

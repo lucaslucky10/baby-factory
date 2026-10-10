@@ -34,7 +34,15 @@ for (let seed = 0; seed < 1000; seed++) {
     const token = old.sim.encodeResult(rec), decoded = BF.sim.decodeResult(token);
     assert.equal(decoded.version, 1);
     const was = old.sim.build(rec), now = BF.sim.build(decoded);
-    for (const key of ['o', 'found', 'spent', 'items', 'scenes']) equal(now[key], was[key], 'legacy QR ' + key);
+    for (const key of ['o', 'found', 'spent', 'items']) equal(now[key], was[key], 'legacy QR ' + key);
+    // Old QR codes retain their outcomes and event structure. Only the explicitly
+    // corrected mobility narratives are allowed to differ on replay.
+    const correctedAges = new Set([11, 11.5, 20.5, 21.5, 68, 71, 84]);
+    const stableScenes = scenes => JSON.parse(JSON.stringify(scenes)).map(scene => {
+      if (was.o.has.smn1) scene.items.forEach(item => { if (correctedAges.has(item.age)) item.text = '[mobility narrative]'; });
+      return scene;
+    });
+    equal(stableScenes(now.scenes), stableScenes(was.scenes), 'legacy QR event structure');
     assert.equal(BF.sim.encodeResult(decoded), token, 'legacy re-encoding');
     const fresh = BF.sim.decodeResult(BF.sim.encodeResult(rec));
     assert.equal(fresh.version, 2);
@@ -79,7 +87,7 @@ for (const [text, prop, mood, action, expression] of performances) {
   if (mood === 'soft') assert.equal(acting.prop, null, 'no celebratory prop during difficult scenes');
 }
 const model = { ...BF.sim.build(record(42)).o, has: {} };
-const actions = ['idle', 'read', 'perform', 'celebrate', 'run', 'cradle', 'think', 'wave', 'welcome', 'cheer'];
+const actions = ['idle', 'read', 'perform', 'celebrate', 'run', 'cradle', 'think', 'wave', 'welcome', 'cheer', 'roll'];
 let poseRenderCount = 0;
 for (const sex of ['M', 'F', 'N']) for (const age of ages) for (const action of actions) for (const phase of [0, .3, 1.2]) {
   for (const has of [{}, { smn1: true }, { rpe65: true }]) {
@@ -98,6 +106,27 @@ const identityKeys = ['faceType', 'hairPart', 'faceWidth', 'eyeWidth', 'eyeSpace
 const identity = o => identityKeys.map(k => BF.Person.look(o, 23, {})[k]);
 equal(identity(model), identity({ ...model, has: { smn1: true }, bought: {} }), 'face identity independent of purchases and conditions');
 assert(new Set(Array.from({ length: 32 }, (_, seed) => JSON.stringify(identity({ ...model, seed })))).size === 32);
+// Regression for the reported wheelchair story contradictions, across aging and sport choices.
+let mobilityStories = 0;
+for (const sport of ['sprint', 'endurance', 'none']) for (const slowAging of [false, true]) for (const grandkids of [false, true]) {
+  const seatedModel = { ...model, has: { smn1: true, rpe65: true }, sport, slowAging, grandkids, longevity: true, endAge: 100 };
+  const events = BF.sim.lifeEvents(seatedModel, '하루').flatMap(s => s.items);
+  const story = events.map(e => e.text).join(' ');
+  assert(!/계단보다|등산 동호회|뒷산을 올랐|주자로 뛰었|오래달리기에서|풀코스 마라톤|전국체전 100m|흰 지팡이를 짚고/.test(story));
+  assert(events.find(e => e.age === 68).text.includes(slowAging ? '무장애 숲길' : '방석과 등받이'));
+  const park = events.find(e => e.age === 71 && e.text.includes('공원을'));
+  assert(park.text.includes(grandkids ? '손주' : '친구'));
+  assert.equal(BF.Stage.performanceFor({ items: [park], prop: null, mood: 'happy' }).action, 'roll');
+  mobilityStories++;
+}
+for (const sex of ['M', 'F', 'N']) for (const age of [4, 7, 15, 23, 50, 70, 95]) {
+  const seatedModel = { ...model, sex, has: { smn1: true, rpe65: true } }, L = BF.Person.look(seatedModel, age, {}), c = BF.Person.chairGeometry(L);
+  assert(c.kneeY > -c.seat && c.kneeY < c.ankleY && c.ankleY < c.footY && c.footY < 0, 'hip, knee, ankle and footrest must be vertically ordered');
+  assert.equal(L.cane, null, 'do not draw a standing cane through a wheelchair');
+  assert(c.radius * 2 > c.seat && c.radius * 2 < c.seat + L.hh * .3, 'wheel size fits the seat');
+  const svg = BF.Person.render(seatedModel, age, { action: 'idle' });
+  for (const part of ['chair-back', 'seated-legs', 'chair-wheels']) assert(svg.includes(part));
+}
 // Reduced motion retains the scene pose, while freezing figure geometry at a given age.
 const motionOriginal = BF.motion.reduced;
 BF.motion.reduced = () => true;
@@ -106,6 +135,12 @@ Object.assign(staticPlayer, { o: model, figEl: {}, rulerEl: {}, bdEls: [], t: 2 
 const segment = { type: 'hold', t0: 0, t1: 4, scene: { items: [{ text: '독서' }], prop: 'book', mood: 'happy' } };
 staticPlayer.draw(23, 1000, segment); const stillFigure = staticPlayer.figEl.innerHTML;
 staticPlayer.draw(23, 3000, segment); assert.equal(staticPlayer.figEl.innerHTML, stillFigure);
+staticPlayer.o = { ...model, has: { smn1: true } };
+const rollingSegment = { ...segment, scene: { items: [{ text: '휠체어를 타고 친구들과 공원을 누볐어요.' }], prop: null, mood: 'happy' } };
+staticPlayer.draw(71, 1000, rollingSegment); const stillChair = staticPlayer.figEl.innerHTML;
+staticPlayer.draw(71, 3000, rollingSegment); assert.equal(staticPlayer.figEl.innerHTML, stillChair);
+assert(staticPlayer.rulerEl.innerHTML.includes('현재 앉은 모습'));
+assert(!staticPlayer.rulerEl.innerHTML.includes('stroke-dasharray'), 'do not mark standing height at the seated head');
 BF.motion.reduced = motionOriginal;
 // Pausing must freeze all figure motion; reduced motion must suppress SVG particles.
 let frames = 0, pausedSvg = 0;
@@ -117,4 +152,4 @@ assert.equal(player.t, 2); assert.equal(player.motionTime, 100); assert.equal(fr
 BF.motion.reduced = () => true;
 player.fxEl = { innerHTML: 'old particles' }; player.burst('happy');
 assert.equal(player.fxEl.innerHTML, '');
-console.log(JSON.stringify({ samples: 100000, counts, perType, qrRecords: 4000, renderCount, poseRenderCount, sceneMappings: performances.length, checks: 'PASS' }, null, 2));
+console.log(JSON.stringify({ samples: 100000, counts, perType, qrRecords: 4000, renderCount, poseRenderCount, mobilityStories, sceneMappings: performances.length, checks: 'PASS' }, null, 2));

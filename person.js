@@ -30,10 +30,28 @@ var BF = window.BF || (window.BF = {});
   }
 
   function ribbon(p0, p1, p2, w0, w1, w2, color, sw) {
-    function normal(a, b) { var dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1; return [-dy / len, dx / len]; }
-    var ns = [normal(p0, p1), normal(p0, p2), normal(p1, p2)];
-    function point(p, n, w, side) { return f(p[0] + n[0] * w * side / 2) + ' ' + f(p[1] + n[1] * w * side / 2); }
-    return path('M' + point(p0, ns[0], w0, 1) + 'Q' + point(p1, ns[1], w1, 1) + ' ' + point(p2, ns[2], w2, 1) + 'L' + point(p2, ns[2], w2, -1) + 'Q' + point(p1, ns[1], w1, -1) + ' ' + point(p0, ns[0], w0, -1) + 'Z', color, sw);
+    // 곡선의 실제 접선에 수직으로 폭을 잡고 양 끝을 둥글게 닫습니다.
+    // 팔을 접어도 어깨/손목에 사각 단면이나 뒤집힌 모서리가 생기지 않습니다.
+    var left = [], right = [];
+    for (var i = 0; i <= 16; i++) {
+      var t = i / 16, u = 1 - t;
+      var x = u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0];
+      var y = u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1];
+      var dx = u * (p1[0] - p0[0]) + t * (p2[0] - p1[0]);
+      var dy = u * (p1[1] - p0[1]) + t * (p2[1] - p1[1]);
+      var len = Math.hypot(dx, dy) || 1, half = (u * u * w0 + 2 * u * t * w1 + t * t * w2) / 2;
+      left.push(f(x - dy / len * half) + ' ' + f(y + dx / len * half));
+      right.push(f(x + dy / len * half) + ' ' + f(y - dx / len * half));
+    }
+    return path('M' + left.join('L') + 'A' + f(w2 / 2) + ' ' + f(w2 / 2) + ' 0 0 0 ' + right.reverse().join('L') + 'A' + f(w0 / 2) + ' ' + f(w0 / 2) + ' 0 0 0 ' + left[0] + 'Z', color, sw);
+  }
+
+  function chairGeometry(L) {
+    var leg = L.H - L.hh - L.neck - L.torso;
+    var seat = leg * .46 + L.hh * .25;
+    return { seat: seat, kneeY: -seat + L.hh * .20, ankleY: -L.hh * .28,
+      footY: -L.hh * .18, radius: seat * .55, caster: L.hh * .095,
+      halfWidth: L.hipW / 2 + L.armW * .9 };
   }
   function hand(x, y, angle, w, skin, sw, open) {
     var d = 'M' + f(-w * .34) + ' 0Q' + f(-w * .46) + ' ' + f(w * .7) + ' ' + f(-w * .22) + ' ' + f(w * 1.02) + 'Q0 ' + f(w * 1.2) + ' ' + f(w * .27) + ' ' + f(w * .93) + 'L' + f(w * .36) + ' ' + f(w * .5) + 'Q' + f(w * .72) + ' ' + f(w * .40) + ' ' + f(w * .55) + ' ' + f(w * .20) + 'L' + f(w * .30) + ' 0Z';
@@ -104,7 +122,7 @@ var BF = window.BF || (window.BF = {});
     L.dimple = o.dimple && age >= 1;
     L.hearing = !!(o.has && o.has.gjb2) && age >= 1.4;
     L.wheelchair = !!(o.has && o.has.smn1) && age >= 4;
-    L.cane = (o.has && o.has.rpe65 && age >= 7) ? 'white' : (age >= 80 && !o.longevity && !o.slowAging && !L.wheelchair ? 'walk' : null);
+    L.cane = (o.has && o.has.rpe65 && age >= 7 && !L.wheelchair) ? 'white' : (age >= 80 && !o.longevity && !o.slowAging && !L.wheelchair ? 'walk' : null);
 
     // 옷
     var career = BF.CAREERS[o.career];
@@ -442,9 +460,10 @@ var BF = window.BF || (window.BF = {});
     var sw = (opts.sw || 0.9) * 0.65;
     var hh = L.hh, a = L.hw / 2, b = hh / 2;
     var seated = L.wheelchair && !opts.standing;
+    var chair = seated ? chairGeometry(L) : null;
     var hipY, shoulderY, chinY, cy;
     if (seated) {
-      hipY = -L.H * 0.27;
+      hipY = -chair.seat;
       shoulderY = hipY - L.torso;
     } else {
       hipY = -(L.H - hh - L.neck - L.torso);
@@ -479,10 +498,13 @@ var BF = window.BF || (window.BF = {});
     } else {
       // 휠체어 뒤판
       if (seated) {
-        out += line(-sw2 * 1.0, hipY + hh * 0.1, -sw2 * 1.0, shoulderY - hh * 0.12, '#59647A', sw * 3);
-        out += line(sw2 * 1.0, hipY + hh * 0.1, sw2 * 1.0, shoulderY - hh * 0.12, '#59647A', sw * 3);
-        out += line(-sw2 * 1.0, shoulderY - hh * 0.12, -sw2 * 1.2, shoulderY - hh * 0.12, INK, sw * 3.2);
-        out += line(sw2 * 1.0, shoulderY - hh * 0.12, sw2 * 1.2, shoulderY - hh * 0.12, INK, sw * 3.2);
+        var backY = shoulderY + L.torso * .30, backW = Math.max(hip2, sw2 * .91);
+        out += '<g class="chair-back">';
+        out += path('M' + f(-backW) + ' ' + f(hipY) + 'V' + f(backY + hh * .12) + 'Q' + f(-backW) + ' ' + f(backY) + ' ' + f(-backW + hh * .12) + ' ' + f(backY) + 'H' + f(backW - hh * .12) + 'Q' + f(backW) + ' ' + f(backY) + ' ' + f(backW) + ' ' + f(backY + hh * .12) + 'V' + f(hipY) + 'Z', '#667C89', sw);
+        [-1, 1].forEach(function (sd) {
+          out += stroke('M' + f(sd * backW) + ' ' + f(hipY) + 'V' + f(backY + hh * .06) + 'q0 ' + f(-hh * .14) + ' ' + f(sd * hh * .12) + ' ' + f(-hh * .14), '#7F919D', sw * 2.3);
+        });
+        out += '</g>';
       }
       // 긴 뒷머리 (몸 뒤)
       var hairS = hairShapes(L, 0, cy, a, b, L.hairColor, sw);
@@ -494,14 +516,18 @@ var BF = window.BF || (window.BF = {});
       var legLen = -hipY, lx = hip2 * 0.48;
       var shoeH = hh * 0.13;
       if (seated) {
-        var kneeY = hipY + L.legW * 0.7, footY = -shoeH * 1.6;
-        out += limb(-lx, hipY, -lx * 1.1, kneeY, L.legW * 1.15, col.bottom, sw);
-        out += limb(lx, hipY, lx * 1.1, kneeY, L.legW * 1.15, col.bottom, sw);
-        out += limb(-lx * 1.1, kneeY, -lx * 1.05, footY, L.legW * 0.95, col.bottom, sw);
-        out += limb(lx * 1.1, kneeY, lx * 1.05, footY, L.legW * 0.95, col.bottom, sw);
-        out += path('M' + f(-hip2 * 1.3) + ' ' + f(footY + shoeH * 0.9) + 'h' + f(hip2 * 2.6) + 'v' + f(shoeH * 0.5) + 'h' + f(-hip2 * 2.6) + 'Z', '#59647A', sw);
-        out += ellipse(-lx * 1.05, footY + shoeH * 0.3, L.legW * 0.7, shoeH * 0.6, col.shoe, sw);
-        out += ellipse(lx * 1.05, footY + shoeH * 0.3, L.legW * 0.7, shoeH * 0.6, col.shoe, sw);
+        out += '<g class="seated-legs">';
+        out += line(-chair.halfWidth, hipY + hh * .10, chair.halfWidth, hipY + hh * .10, '#546979', hh * .13);
+        [-1, 1].forEach(function (sd) {
+          var kneeX = sd * hip2 * .63, ankleX = sd * hip2 * .55;
+          out += stroke('M' + f(sd * chair.halfWidth * .72) + ' ' + f(hipY) + 'L' + f(sd * chair.halfWidth * .55) + ' ' + f(chair.footY) + 'H0', '#8297A5', sw * 2.5);
+          out += ribbon([sd * lx, hipY], [kneeX, hipY + hh * .15], [kneeX, chair.kneeY], L.legW * 1.25, L.legW * 1.20, L.legW * 1.12, col.bottom, sw * .5);
+          out += ribbon([kneeX, chair.kneeY], [kneeX, (chair.kneeY + chair.ankleY) / 2], [ankleX, chair.ankleY], L.legW * 1.02, L.legW * .85, L.legW * .68, col.shorts || col.skirt ? L.skin : col.bottom, sw * .5);
+          out += stroke('M' + f(kneeX - L.legW * .30) + ' ' + f(chair.kneeY) + 'q' + f(L.legW * .30) + ' ' + f(hh * .045) + ' ' + f(L.legW * .60) + ' 0', U.mix(col.bottom, '#FFFFFF', .25), sw * .65);
+          out += ellipse(ankleX, chair.footY - hh * .045, L.legW * .64, shoeH * .53, col.shoe, sw * .6);
+        });
+        out += line(-hip2 * 1.05, chair.footY + hh * .025, hip2 * 1.05, chair.footY + hh * .025, '#546979', hh * .065);
+        out += '</g>';
       } else {
         [-1, 1].forEach(function (sd) {
           var x = sd * lx, lift = action === 'run' ? Math.max(0, move * sd) * hh * .48 * pose : 0;
@@ -522,7 +548,7 @@ var BF = window.BF || (window.BF = {});
 
       // 몸통
       var bel = L.belly * hh * 0.13, tTop = shoulderY + breathe * hh * 0.01;
-      var coatExt = col.coat ? legLen * 0.4 : (L.outfit === 'apron' ? 0 : 0);
+      var coatExt = col.coat ? (seated ? hh * .18 : legLen * 0.4) : 0;
       var rr = Math.min(sw2 * 0.5, L.torso * 0.3);
       var bodyBottom = hipY + hh * 0.04;
       function torsoPath(extBottom) {
@@ -539,7 +565,9 @@ var BF = window.BF || (window.BF = {});
           'Q' + f(sw2 * .76) + ' ' + f(tTop + hh * .05) + ' ' + f(neckW) + ' ' + f(tTop) + 'Z';
       }
       // 치마
-      if (col.skirt && !seated) {
+      if (col.skirt && seated) {
+        out += path('M' + f(-hip2) + ' ' + f(hipY - hh * .05) + 'Q' + f(-hip2 * 1.18) + ' ' + f(chair.kneeY) + ' ' + f(-hip2) + ' ' + f(chair.kneeY + hh * .10) + 'Q0 ' + f(chair.kneeY + hh * .18) + ' ' + f(hip2) + ' ' + f(chair.kneeY + hh * .10) + 'Q' + f(hip2 * 1.18) + ' ' + f(chair.kneeY) + ' ' + f(hip2) + ' ' + f(hipY - hh * .05) + 'Z', '#5B6B8C', sw * .6);
+      } else if (col.skirt) {
         out += path('M' + f(-hip2 * 1.05) + ' ' + f(hipY - hh * 0.05) + 'L' + f(-hip2 * 1.35) + ' ' + f(hipY + legLen * 0.42) + 'L' + f(hip2 * 1.35) + ' ' + f(hipY + legLen * 0.42) + 'L' + f(hip2 * 1.05) + ' ' + f(hipY - hh * 0.05) + 'Z', '#5B6B8C', sw);
         for (var pl = -2; pl <= 2; pl++) out += line(pl * hip2 * 0.42, hipY + hh * 0.05, pl * hip2 * 0.55, hipY + legLen * 0.4, INK, sw * 0.5, ' opacity="0.45"');
       }
@@ -618,15 +646,26 @@ var BF = window.BF || (window.BF = {});
 
       // 휠체어 바퀴
       if (seated) {
-        var wr = L.H * 0.16, wx = hip2 + L.legW * 0.55;
+        var wr = chair.radius, wx = chair.halfWidth;
+        out += '<g class="chair-wheels">';
         [-1, 1].forEach(function (sd) {
-          var cxw = sd * (wx + wr * 0.2);
-          out += ellipse(cxw, -wr, wr * 0.34, wr, '#3A4256', sw * 2.6);
-          out += ellipse(cxw, -wr, wr * 0.2, wr * 0.82, 'none', sw * 0.8, ' stroke-dasharray="' + f(wr * 0.2) + ' ' + f(wr * 0.25) + '"');
-          out += ellipse(cxw + sd * wr * 0.12, -wr, wr * 0.3, wr * 0.92, 'none', sw * 0.9);
-          out += circle(sd * (hip2 + L.legW * 0.1), -hh * 0.12, hh * 0.1, '#3A4256', sw);
+          var cxw = sd * (wx + wr * .12), wheelW = wr * .48;
+          out += ellipse(cxw, -wr, wheelW, wr, '#526878', sw * 1.8);
+          out += ellipse(cxw, -wr, wheelW * .83, wr * .87, '#E6EBE9', sw * .6);
+          for (var spoke = 0; spoke < 8; spoke++) {
+            var angle = spoke * Math.PI / 4 + (action === 'roll' ? phase * .8 : 0);
+            out += line(cxw, -wr, cxw + Math.cos(angle) * wheelW * .8, -wr + Math.sin(angle) * wr * .84, '#A6B4BA', sw * .6);
+          }
+          out += ellipse(cxw + sd * wr * .04, -wr, wheelW * .89, wr * .92, 'none', sw * 1.2);
+          out += circle(cxw, -wr, hh * .048, '#526878', sw * .4);
+          var casterX = sd * (hip2 * .88);
+          out += line(casterX, chair.footY, casterX, -chair.caster, '#7B8E99', sw * 1.8);
+          out += circle(casterX, -chair.caster, chair.caster, '#526878', sw * .7);
+          out += circle(casterX, -chair.caster, chair.caster * .4, '#DCE3E5', 0);
+          out += line(sd * wx, hipY - hh * .23, sd * wx, hipY + hh * .14, '#7B8E99', sw * 2);
+          out += line(sd * (wx - hh * .12), hipY - hh * .23, sd * (wx + hh * .14), hipY - hh * .23, '#526878', hh * .075);
         });
-        out += path('M' + f(-hip2 * 1.25) + ' ' + f(hipY) + 'h' + f(hip2 * 2.5) + 'v' + f(hh * 0.1) + 'h' + f(-hip2 * 2.5) + 'Z', '#59647A', sw);
+        out += '</g>';
       }
 
       // 어깨 → 팔꿈치 → 손목의 한 실루엣. 손은 손목 방향을 따라갑니다.
@@ -657,7 +696,11 @@ var BF = window.BF || (window.BF = {});
         }
         // 보행 보조기기를 든 손은 안전하게 유지합니다.
         if (sd === 1 && L.cane) { targetE = [sw2 + hh * .08, tTop + armLen * .55]; targetW = [sw2 + hh * .24, tTop + armLen * .80]; }
-        if (seated && action === 'idle') { targetE = [sd * (sw2 + hh * .12), tTop + armLen * .6]; targetW = [sd * (hip2 + hh * .14), hipY]; }
+        if (seated && action === 'idle' && !hold) { targetE = [sd * (sw2 + hh * .10), hipY - hh * .40]; targetW = [sd * (chair.halfWidth - hh * .10), hipY - hh * .27]; }
+        if (seated && action === 'roll') {
+          targetE = [sd * (sw2 + hh * .20), tTop + armLen * .65];
+          targetW = [sd * (chair.halfWidth + chair.radius * .15), -chair.radius * 1.70 + move * hh * .06];
+        }
         elbow = elbow.map(function (v, i) { return U.lerp(v, targetE[i], pose); });
         wrist = wrist.map(function (v, i) { return U.lerp(v, targetW[i], pose); });
         var shortSleeve = L.outfit === 'kid' && L.age >= 3;
@@ -665,8 +708,6 @@ var BF = window.BF || (window.BF = {});
         if (shortSleeve) {
           var cuff = [U.lerp(start[0], elbow[0], .65), U.lerp(start[1], elbow[1], .65)];
           out += ribbon(start, [U.lerp(start[0], cuff[0], .5), U.lerp(start[1], cuff[1], .5)], cuff, L.armW * 1.24, L.armW * 1.16, L.armW * 1.06, col.sleeve, sw * .3);
-        } else {
-          out += stroke('M' + f(wrist[0] - L.armW * .25) + ' ' + f(wrist[1]) + 'l' + f(L.armW * .5) + ' 0', U.mix(col.sleeve, INK, .18), sw * .6);
         }
         var angle = Math.atan2(wrist[1] - elbow[1], wrist[0] - elbow[0]) * 180 / Math.PI - 90;
         out += hand(wrist[0], wrist[1], angle, L.armW * .72, L.skin, sw, action === 'wave' || action === 'welcome');
@@ -740,7 +781,7 @@ var BF = window.BF || (window.BF = {});
     var L = look(o, age, {});
     var hair = (L.style === 'perm' || L.tex === 'curly') ? 0.34 : L.tex === 'wavy' ? 0.16 : 0.1;
     if (L.outfit === 'swaddle') hair = 0.38; else if (L.style === 'wisp') hair = 0.12;
-    var head = L.wheelchair ? L.H * 0.27 + L.torso + L.neck + L.hh : L.H;
+    var head = L.wheelchair ? chairGeometry(L).seat + L.torso + L.neck + L.hh : L.H;
     return head + L.hh * hair;
   }
 
@@ -757,5 +798,5 @@ var BF = window.BF || (window.BF = {});
       '<g transform="translate(' + f(w / 2) + ' ' + f(h * 0.95) + ') scale(' + f(scale) + ')">' + inner + '</g></svg>';
   }
 
-  BF.Person = { render: render, look: look, topOf: topOf, standalone: standalone, INK: INK };
+  BF.Person = { render: render, look: look, topOf: topOf, standalone: standalone, chairGeometry: chairGeometry, INK: INK };
 })(BF);
