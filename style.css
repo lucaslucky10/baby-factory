@@ -625,36 +625,102 @@ html.is-viewer body { overflow: auto; overflow-x: hidden; background: var(--mint
 .v-foot p { margin: 0 0 4px; }
 .v-error h1 { font-family: var(--font-display); font-weight: 400; font-size: 30px; margin: 0 0 8px; }
 
-/* 그림책 속 작은 제작소 — 기존 조작판 배치와 기능은 그대로 유지 */
-#viewport { background: radial-gradient(ellipse at 50% 35%, #F9F3E9, #E6EDE6); }
-#stage { background-color: #EDF3E8; background-image: radial-gradient(#A8BCAB40 1.5px, transparent 1.5px); background-size: 28px 28px; }
-.sign { background: #F5C6BE; border-color: #74615C; box-shadow: 0 8px 0 #D8B8AA, 0 16px 36px #78695A14; }
-.sign::before, .sign::after { background: #9F9B85; }
-.sign-bulbs { animation: none; opacity: .8; }
-.logo { color: #FFFDF5; text-shadow: 0 4px 0 #74615C, 2px 0 0 #74615C, -2px 0 0 #74615C, 0 -2px 0 #74615C; }
-.box { background: #F9EAD7; border-color: #A69B85; border-radius: 24px 24px 10px 10px; }
-.box::before { border: 0; border-radius: 20px; background: #FFFDF5; }
-.box .box-label { background: #697E70; color: #FFFFFF; }
-.box .tag { background: #B65C70; border-color: #B65C70; transform: rotate(-3deg); }
-.belt-items { animation-duration: 64s; }
-.belt { background: #ABBCA8; border-color: #809480; }
-.belt i { background: repeating-linear-gradient(90deg, #829780 0 18px, transparent 18px 46px); animation-duration: 2.4s; }
-.incubator { background: #DCEBDF; border-color: #839B8C; box-shadow: 0 5px 0 #B5C8B8; }
-.inc-glass { border-color: #A7BDB0; border-radius: 70px 70px 20px 20px; background: radial-gradient(ellipse at 50% 35%, #FFFEF6 0%, #F1F3E6 65%, #DCE9DB 100%); }
-.inc-glass::before { background: #C7DBBC; border-top: 1px solid #B2C9A9; height: 12px; }
-.inc-glass::after { opacity: .35; }
-#preview { inset: 0 0 12px; height: calc(100% - 12px); }
-.bubbles i { animation-duration: 9s; border-color: #C4B58566; background: #FFEDB780; }
-.pod.is-busy .pod-body { animation: pod-breathe 3s ease-in-out infinite; }
-@keyframes pod-breathe { 50% { box-shadow: 0 0 30px 8px #FFEAB566; } }
-.pod-cap::before, .pod-cap::after { animation: lamp-soft 2.8s ease-in-out infinite; background: #E4C27E; }
-@keyframes lamp-soft { 50% { background: #F9E8AF; } }
-#pod-baby { transition: opacity .7s .3s, transform 1s .3s cubic-bezier(.22,.65,.3,1); transform: translateY(14px) scale(.94); }
+/* ================= 디자인 보강 =================
+   장난감 공장의 정체성(남색 윤곽 · 경고 줄무늬 · 격자 · 깜빡이는 전구)을 지키면서
+   탭별 색, 금액대별 지폐 버튼, 톱니바퀴, 부드러운 경고를 더함 */
+:root {
+  --c-looks: #FF6F91;  --c-looks-bg: #FFDCE6;  --c-looks-paper: #FFF6F9;
+  --c-body: #3E9BD8;   --c-body-bg: #D5ECFB;   --c-body-paper: #F3FAFF;
+  --c-mind: #E0A100;   --c-mind-bg: #FFEFA8;   --c-mind-paper: #FFFCEB;
+  --c-health: #2FA57A; --c-health-bg: #CFF0E1; --c-health-paper: #F2FBF6;
+}
+
+/* 타이틀: 간판 광택 + 뒤에서 도는 톱니바퀴 + 알록달록한 상자 */
+.sign { z-index: 1; background: linear-gradient(180deg, #FF93AE 0%, var(--pink) 58%, #F25A82 100%); }
+.gear { position: absolute; z-index: 0; overflow: visible; animation: gear-turn 26s linear infinite; }
+.gear.g1 { left: 150px; top: 36px; width: 180px; }
+.gear.g2 { left: 136px; top: 196px; width: 104px; animation-duration: 15s; animation-direction: reverse; }
+.gear.g3 { right: 150px; top: 60px; width: 150px; animation-duration: 21s; animation-direction: reverse; }
+@keyframes gear-turn { to { transform: rotate(360deg); } }
+.belt-items { animation-duration: 50s; }
+.box:nth-child(4n+2) { background: var(--pink-2); }
+.box:nth-child(4n+3) { background: var(--yellow-2); }
+.box:nth-child(4n+4) { background: var(--c-health-bg); }
+
+/* 기계 패널 모서리 리벳 */
+.atm, .incubator, .dna, .res-right {
+  background-image:
+    radial-gradient(circle at 14px 14px, var(--steel) 0 4px, var(--ink) 4.5px 6.5px, transparent 7px),
+    radial-gradient(circle at calc(100% - 14px) 14px, var(--steel) 0 4px, var(--ink) 4.5px 6.5px, transparent 7px),
+    radial-gradient(circle at 14px calc(100% - 14px), var(--steel) 0 4px, var(--ink) 4.5px 6.5px, transparent 7px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), var(--steel) 0 4px, var(--ink) 4.5px 6.5px, transparent 7px);
+}
+
+/* 예산: 금액이 클수록 비싼 지폐 색 (1 초록 · 2 파랑 · 3 금빛 · 4 최고액) */
+.preset {
+  position: relative; overflow: hidden;
+  background-image: repeating-radial-gradient(circle at 16% 50%, transparent 0 7px, rgba(30, 42, 71, .07) 7px 8px);
+}
+.preset::after { content: '₩'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 700 26px var(--font-mono); opacity: .14; }
+.preset[data-tier="1"] { background-color: #D4EDCB; }
+.preset[data-tier="2"] { background-color: #D3E8FA; }
+.preset[data-tier="3"] { background-color: #FFE49A; }
+.preset[data-tier="4"] { background-color: #FFC6D8; box-shadow: 0 4px 0 var(--ink), inset 0 0 0 3px var(--yellow); }
+.preset.is-on { background-color: var(--ink); color: var(--yellow); }
+.preset.is-on::after { opacity: .3; }
+
+/* 설계: 탭마다 고유 색, 탭과 목록 종이가 이어지도록 */
+.tab[data-cat="looks"], .trait-list[data-cat="looks"] { --cat: var(--c-looks); --cat-bg: var(--c-looks-bg); --cat-paper: var(--c-looks-paper); }
+.tab[data-cat="body"], .trait-list[data-cat="body"] { --cat: var(--c-body); --cat-bg: var(--c-body-bg); --cat-paper: var(--c-body-paper); }
+.tab[data-cat="mind"], .trait-list[data-cat="mind"] { --cat: var(--c-mind); --cat-bg: var(--c-mind-bg); --cat-paper: var(--c-mind-paper); }
+.tab[data-cat="health"], .trait-list[data-cat="health"] { --cat: var(--c-health); --cat-bg: var(--c-health-bg); --cat-paper: var(--c-health-paper); }
+.tab { background: var(--cat-bg, var(--steel)); }
+.tab svg { stroke: var(--ink); }
+.tab::before { content: ''; position: absolute; left: 14px; right: 14px; top: 7px; height: 5px; border-radius: 3px; background: var(--cat, var(--ink)); opacity: .9; }
+.tab.is-on { background: var(--cat-paper, var(--paper)); }
+.trait-list[data-cat] { background-color: var(--cat-paper); }
+.trait-list[data-cat] .trait.is-bought { background: var(--cat-bg); }
+.trait-list[data-cat] .gene { background: var(--cat-bg); }
+.trait-list[data-cat] .opt.is-on:not(.is-nat) { box-shadow: 0 3px 0 var(--cat); }
+.trait-list[data-cat] .opt .price { color: var(--ink); }
+.trait-list[data-cat] .opt .price::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; background: var(--cat); vertical-align: 1px; }
+.trait-list[data-cat] .opt.is-nat .price::before, .trait-list[data-cat] .opt.is-poor .price::before { display: none; }
+.trait-list[data-cat] .opt.is-on .price { color: var(--yellow); }
+.trait-list[data-cat] .opt.is-nat.is-on .price, .trait-list[data-cat] .opt.is-poor .price { color: inherit; }
+
+/* 출생 신고서: 서류 테두리 + 빨간 도장 */
+.reveal { box-shadow: var(--shadow), inset 0 0 0 9px var(--paper), inset 0 0 0 11px rgba(30, 42, 71, .18); }
+.reveal::after {
+  content: '출생 확인'; position: absolute; top: 24px; right: 30px; padding: 6px 14px 4px;
+  border: 4px solid var(--red); border-radius: 12px; color: var(--red);
+  font-family: var(--font-display); font-size: 28px; letter-spacing: .04em;
+  transform: rotate(9deg); opacity: .82; pointer-events: none;
+  animation: birth-stamp .45s .5s cubic-bezier(.2, 1.6, .5, 1) both;
+}
+@keyframes birth-stamp { from { transform: scale(2.2) rotate(-6deg); opacity: 0; } to { transform: scale(1) rotate(9deg); opacity: .82; } }
+
+/* 남은 시간 10초: 번쩍임 대신 부드럽게 맥박 */
+.timer.is-danger { animation: danger-soft 1s ease-in-out infinite; }
+@keyframes danger-soft { 50% { background: var(--red); box-shadow: 0 6px 0 var(--ink), 0 0 0 8px rgba(239, 75, 60, .28); } }
+
+/* 결과 요약 숫자: 탭 색과 같은 계열 */
+.res-stats .stat:nth-child(1) { background: var(--c-body-bg); }
+.res-stats .stat:nth-child(2) { background: var(--c-mind-bg); }
+.res-stats .stat:nth-child(3) { background: var(--c-looks-bg); }
+.res-stats .stat:nth-child(4) { background: var(--c-health-bg); }
+
+/* 탄생 캡슐: 은은한 빛 + 부드럽게 등장 */
+.pod.is-busy .pod-body { animation: pod-breathe 2.4s ease-in-out infinite; }
+@keyframes pod-breathe { 50% { box-shadow: 0 0 34px 10px rgba(255, 210, 63, .45); } }
+#pod-baby { transition: opacity .7s .3s, transform 1s .3s cubic-bezier(.22, .65, .3, 1); transform: translateY(14px) scale(.94); }
 .pod.is-open #pod-baby { transform: translateY(0) scale(1); }
-.timer.is-danger { animation: none; background: #EF4B3C; }
-.card { animation: story-in .55s cubic-bezier(.22,.65,.3,1); }
+
+/* 인생 기록 카드 등장 */
+.card { animation: story-in .55s cubic-bezier(.22, .65, .3, 1); }
 @keyframes story-in { from { opacity: 0; transform: translateY(16px); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .belt-items, .belt i, .bubbles i, .pod.is-busy .pod-body, .pod-cap::before, .pod-cap::after { animation: none !important; }
+  .gear, .belt-items, .belt i, .bubbles i, .pod.is-busy .pod-body, .pod-cap::before, .pod-cap::after, .sign-bulbs, .timer.is-danger { animation: none !important; }
+  .timer.is-danger { background: var(--red); }
   #pod-baby { transition: none; }
 }

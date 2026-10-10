@@ -40,7 +40,7 @@ var BF = window.BF || (window.BF = {});
     s += '<text x="' + f(bx + 30) + '" y="' + f(bt + 62) + '" ' + mono + ' font-size="34" fill="#F4F1DE" opacity="0.9">' + (nm ? nm + ' 화이팅!' : '오늘도 화이팅!') + '</text>';
     s += '<text x="' + f(bx + 30) + '" y="' + f(bt + 118) + '" ' + mono + ' font-size="26" fill="#F4F1DE" opacity="0.75">급식: 짜장면</text>';
     s += '<text x="' + f(bx + 30) + '" y="' + f(bt + 168) + '" ' + mono + ' font-size="26" fill="#F4F1DE" opacity="0.6">1 + 1 = 2</text>';
-    var ckx = fx - 270, cky = gy * 0.17;
+    var ckx = fx - 250, cky = gy * 0.42; // 왼쪽 위 나이 표시판에 가리지 않도록 아래로
     s += '<circle cx="' + f(ckx) + '" cy="' + f(cky) + '" r="46" fill="#FFFFFF"' + st + '/>' + ln(ckx, cky, ckx, cky - 30, 4) + ln(ckx, cky, ckx + 22, cky + 8, 4);
     var dx = fx + 240;
     s += rect(dx, gy - 120, 170, 22, '#D8B07A', st + ' rx="4"') + rect(dx + 14, gy - 98, 14, 98, '#9AA5B8', st) + rect(dx + 142, gy - 98, 14, 98, '#9AA5B8', st);
@@ -58,7 +58,7 @@ var BF = window.BF || (window.BF = {});
       for (var yy = top + 14; yy < cwt + cwh - 14; yy += 26) for (var xx = x + 10; xx < x + w - 10; xx += 22) if (((xx * 7 + yy * 3) | 0) % 3) s += rect(xx, yy, 9, 12, '#FFD23F', ' opacity="0.85"');
     });
     s += rect(cwx, cwt, cww, cwh, 'none', st + ' rx="8"') + ln(cwx + cww / 2, cwt, cwx + cww / 2, cwt + cwh, 5);
-    var pox = fx - 330, poy = gy * 0.18, rot = ' transform="rotate(-4 ' + f(pox + 55) + ' ' + f(poy + 75) + ')"';
+    var pox = fx - 330, poy = gy * 0.36, rot = ' transform="rotate(-4 ' + f(pox + 55) + ' ' + f(poy + 75) + ')"';
     s += rect(pox, poy, 110, 150, '#FF6F91', st + rot) + '<text x="' + f(pox + 55) + '" y="' + f(poy + 88) + '" text-anchor="middle" font-family="Bagel Fat One, sans-serif" font-size="30" fill="#FFFDF5"' + rot + '>LIVE</text>';
     s += rect(0, gy, W, H - gy, '#D9D3C7') + '</g>';
 
@@ -88,7 +88,7 @@ var BF = window.BF || (window.BF = {});
     });
     var bnx = fx + 240;
     s += rect(bnx, gy - 90, 240, 20, '#B5835A', st + ' rx="6"') + rect(bnx, gy - 130, 240, 18, '#B5835A', st + ' rx="6"') + rect(bnx + 20, gy - 70, 14, 70, '#59647A', st) + rect(bnx + 206, gy - 70, 14, 70, '#59647A', st);
-    s += '<path d="M' + f(fx - 230) + ' 140q14-12 28 0q14-12 28 0" fill="none" stroke="' + INK + '" stroke-width="3"/><path d="M' + f(fx - 160) + ' 100q10-9 20 0q10-9 20 0" fill="none" stroke="' + INK + '" stroke-width="3"/>';
+    s += '<path d="M' + f(fx + 250) + ' 140q14-12 28 0q14-12 28 0" fill="none" stroke="' + INK + '" stroke-width="3"/><path d="M' + f(fx + 320) + ' 100q10-9 20 0q10-9 20 0" fill="none" stroke="' + INK + '" stroke-width="3"/>';
     s += rect(0, gy, W, H - gy, '#A9D49F') + '</g>';
 
     s += '<line x1="0" y1="' + gy + '" x2="' + W + '" y2="' + gy + '" stroke="' + INK + '" stroke-width="4"/>';

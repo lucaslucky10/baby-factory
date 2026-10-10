@@ -6,9 +6,9 @@ var BF = window.BF || (window.BF = {});
 
 (function (BF) {
   var U = BF.util;
-  var INK = '#51463F'; // 따뜻한 연필색 윤곽
+  var INK = '#1E2A47'; // 화면 UI·배경과 같은 남색 윤곽 (멀리서도 또렷하게)
   var SKIN = ['#F8DDC8', '#F0C9A7', '#E3B38D'];
-  var TOPS = ['#F2A6B0', '#89BCD3', '#EAC773', '#9AC8A8', '#B8ACD6', '#EBAA87', '#83BDB2', '#DFA2B6'];
+  var TOPS = ['#FF8FAB', '#6FC3F0', '#FFCF5C', '#7FDCA6', '#B6A3FF', '#FFA877', '#4FC4BA', '#F48C9E'];
   var BOTTOMS = ['#3D5A80', '#4A4E69', '#5E6472', '#6D597A', '#2E4057', '#55708F'];
   var HAIR_GRAY = '#A3A7AE', HAIR_WHITE = '#ECEDEF';
 
@@ -26,7 +26,7 @@ var BF = window.BF || (window.BF = {});
   // 완만하게 휘는 팔다리. 관절마다 딱딱한 원형 마디를 만들지 않습니다.
   function limb(x1, y1, x2, y2, w, color, sw) {
     var d = 'M' + f(x1) + ' ' + f(y1) + 'Q' + f((x1 + x2) / 2 + (x2 - x1) * 0.14) + ' ' + f((y1 + y2) / 2) + ' ' + f(x2) + ' ' + f(y2);
-    return stroke(d, U.mix(color, INK, 0.24), w + sw) + stroke(d, color, w);
+    return stroke(d, U.mix(color, INK, 0.62), w + sw * 1.3) + stroke(d, color, w);
   }
 
   function ribbon(p0, p1, p2, w0, w1, w2, color, sw) {
@@ -421,14 +421,14 @@ var BF = window.BF || (window.BF = {});
       case 'school': c.top = '#2F3E6B'; c.sleeve = '#2F3E6B'; c.bottom = '#3A4566'; c.shoe = '#2B2D42'; c.skirt = L.sexF; break;
       case 'hoodie': c.top = U.mix(pal.top2, '#6B7280', 0.2); c.sleeve = c.top; c.bottom = '#41618A'; break;
       case 'suit': c.top = '#39435A'; c.sleeve = '#39435A'; c.bottom = '#39435A'; c.shoe = '#2B2D42'; break;
-      case 'smart': c.top = U.mix(pal.top, '#A0826D', 0.45); c.sleeve = c.top; c.bottom = '#4A4E69'; break;
+      case 'smart': c.top = U.mix(pal.top, '#A0826D', 0.28); c.sleeve = c.top; c.bottom = '#4A4E69'; break;
       case 'labcoat': c.top = '#F5F7FA'; c.sleeve = '#F5F7FA'; c.bottom = '#4A4E69'; c.coat = true; break;
       case 'track': c.top = pal.top === '#FFCF5C' ? '#E84855' : U.mix(pal.top, '#1E2A47', 0.25); c.sleeve = c.top; c.bottom = c.top; c.shoe = '#FFFFFF'; break;
       case 'turtleneck': c.top = '#2B2D42'; c.sleeve = '#2B2D42'; c.bottom = '#3D3F55'; break;
       case 'apron': c.top = U.mix(pal.top, '#FFFFFF', 0.35); c.sleeve = c.top; c.bottom = '#4A4E69'; break;
       case 'scrubs': c.top = '#5BC0BE'; c.sleeve = '#5BC0BE'; c.bottom = '#5BC0BE'; c.shoe = '#FFFFFF'; break;
       case 'fire': c.top = '#3B3F4A'; c.sleeve = '#3B3F4A'; c.bottom = '#3B3F4A'; c.shoe = '#2B2D42'; break;
-      case 'cardigan': c.top = U.mix(pal.top, '#B5A48B', 0.55); c.sleeve = c.top; c.bottom = '#6B6F80'; c.shoe = '#5A4636'; break;
+      case 'cardigan': c.top = U.mix(pal.top, '#B5A48B', 0.38); c.sleeve = c.top; c.bottom = '#6B6F80'; c.shoe = '#5A4636'; break;
     }
     return c;
   }
@@ -476,7 +476,7 @@ var BF = window.BF || (window.BF = {});
     var L = look(o, age, opts);
     L.sexF = o.sex === 'F';
     var pal = palette(o);
-    var sw = (opts.sw || 0.9) * 0.65;
+    var sw = (opts.sw || 0.9) * 0.85;
     var hh = L.hh, a = L.hw / 2, b = hh / 2;
     var seated = L.wheelchair && !opts.standing;
     var chair = seated ? chairGeometry(L) : null;

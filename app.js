@@ -80,8 +80,11 @@
   // ================= 1. 예산 =================
   var budgetVal = 0;
   function renderPresets() {
+    // 금액 순위에 따라 지폐 색 등급(1~4)을 붙임
+    var sorted = settings.presets.slice().sort(function (a, b) { return a - b; }), n = sorted.length;
     $('presets').innerHTML = settings.presets.map(function (p) {
-      return '<button class="preset" type="button" data-v="' + p + '">' + U.moneyShort(p) + '</button>';
+      var tier = Math.min(4, Math.floor(sorted.indexOf(p) * 4 / n) + 1);
+      return '<button class="preset" type="button" data-v="' + p + '" data-tier="' + tier + '">' + U.moneyShort(p) + '</button>';
     }).join('');
   }
   function setBudget(v, fromInput) {
@@ -274,6 +277,7 @@
     }
     BF.TRAITS.forEach(function (t, i) { if (t.cat === S.tab) html += traitHTML(t, i); });
     $('trait-list').innerHTML = html;
+    $('trait-list').setAttribute('data-cat', S.tab);
     $('trait-list').scrollTop = 0;
     refreshStates();
   }
