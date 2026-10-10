@@ -129,7 +129,7 @@ var BF = window.BF || (window.BF = {});
     else if (prop === 'backpack' || prop === 'briefcase') { action = 'wave'; expression = 'smile'; }
     else if (prop === 'ball') { action = 'cheer'; expression = 'delighted'; }
     else if (/무사히 치료|완주|금상|1등|수상/.test(text)) { action = 'celebrate'; expression = 'delighted'; }
-    else if (/사랑하는|결혼|함께 살/.test(text)) { action = 'welcome'; expression = 'shy'; }
+    else if (/사랑하는|결혼했|함께 살/.test(text)) { action = 'welcome'; expression = 'shy'; }
     else if (/어려|막혔|실패|다쳤|통증|여드름|흐려/.test(text)) { action = 'think'; expression = 'thoughtful'; }
     else if (/친구|수다|선물|생일|입학/.test(text)) { action = 'wave'; expression = 'smile'; }
     else if (/산책|운동|달리기/.test(text)) { action = 'run'; expression = 'smile'; }

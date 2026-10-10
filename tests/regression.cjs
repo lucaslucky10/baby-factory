@@ -34,15 +34,23 @@ for (let seed = 0; seed < 1000; seed++) {
     const token = old.sim.encodeResult(rec), decoded = BF.sim.decodeResult(token);
     assert.equal(decoded.version, 1);
     const was = old.sim.build(rec), now = BF.sim.build(decoded);
-    for (const key of ['o', 'found', 'spent', 'items']) equal(now[key], was[key], 'legacy QR ' + key);
+    for (const key of ['found', 'spent', 'items']) equal(now[key], was[key], 'legacy QR ' + key);
+    // Family correction: children only after marriage, grandchildren only with children.
+    const familyFixed = o => ({ ...o, kids: o.partner && o.kids, grandkids: o.partner && o.kids && o.grandkids });
+    equal(now.o, familyFixed(was.o), 'legacy QR o');
     // Old QR codes retain their outcomes and event structure. Only the explicitly
-    // corrected mobility narratives are allowed to differ on replay.
+    // corrected mobility and family narratives are allowed to differ on replay.
     const correctedAges = new Set([11, 11.5, 20.5, 21.5, 68, 71, 84]);
+    const familyText = /함께 살기로|결혼했어요|혼자만의 삶|첫 아이가|손주|가족들이 곁에서|친구들이 곁에서|친구들 생일|태어날 때 뭘 골랐어요|창가에 앉아/;
     const stableScenes = scenes => JSON.parse(JSON.stringify(scenes)).map(scene => {
       if (was.o.has.smn1) scene.items.forEach(item => { if (correctedAges.has(item.age)) item.text = '[mobility narrative]'; });
+      scene.items.forEach(item => { if (familyText.test(item.text)) item.text = '[family narrative]'; });
       return scene;
     });
-    equal(stableScenes(now.scenes), stableScenes(was.scenes), 'legacy QR event structure');
+    // Unmarried lives that used to gain a child lose those two scenes by design, and lives
+    // with an unedited visual or hearing impairment drop scenes that contradicted it.
+    const sensoryCorrected = was.o.has.rpe65 || (was.o.has.gjb2 && (was.o.pitch || was.o.bought.music));
+    if (!(was.o.kids && !was.o.partner) && !sensoryCorrected) equal(stableScenes(now.scenes), stableScenes(was.scenes), 'legacy QR event structure');
     assert.equal(BF.sim.encodeResult(decoded), token, 'legacy re-encoding');
     const fresh = BF.sim.decodeResult(BF.sim.encodeResult(rec));
     assert.equal(fresh.version, 2);
@@ -51,6 +59,41 @@ for (let seed = 0; seed < 1000; seed++) {
     assert(built.o.disorders.length <= 2);
   }
 }
+// Family stories stay coherent: no children without marriage, no grandchildren without children,
+// and no family mentioned in the old-age lines of an unmarried, childless life.
+let familyLives = 0, singles = 0, parents = 0;
+for (let seed = 0; seed < 4000; seed++) {
+  const built = BF.sim.build({ ...record(seed), version: 2 }), o = built.o;
+  assert(!o.kids || o.partner, 'children only after marriage');
+  assert(!o.grandkids || o.kids, 'grandchildren only with children');
+  const story = built.scenes.flatMap(s => s.items).map(e => e.text).join(' ');
+  if (o.partner) assert(story.includes('결혼했어요'), 'marriage is stated');
+  else { singles++; assert(story.includes('결혼하지 않고') && !/첫 아이가|손주|가족들이 곁에서/.test(story), 'single life has no children'); }
+  if (o.kids) { parents++; assert(story.includes('첫 아이가')); }
+  if (!o.grandkids) assert(!story.includes('손주'), 'no grandchildren mentioned');
+  familyLives++;
+}
+assert(singles > 0 && parents > 0);
+// Sensory impairments that were not edited away are never contradicted by the story or drawing.
+let blindLives = 0, deafMusicLives = 0;
+for (let seed = 0; seed < 20000; seed++) {
+  const rec = { ...record(seed), version: 2, guarantee: true };
+  const found = BF.sim.screen(seed, true, 2);
+  if (found.indexOf('rpe65') < 0 && found.indexOf('gjb2') < 0) continue;
+  rec.edits = BF.DISORDERS.map(() => false);
+  const built = BF.sim.build(rec), o = built.o;
+  const story = built.scenes.flatMap(s => s.items).map(e => e.text).join(' ');
+  if (o.has.rpe65) {
+    blindLives++;
+    assert(!/첫 안경|시력검사 결과|노안|돋보기|다초점|휴대폰을 멀리/.test(story), 'blind life has no eyesight scenes');
+    for (const age of [10, 30, 60, 85]) assert.equal(BF.Person.look(o, age, {}).glasses, 'none', 'no corrective glasses when blind');
+  }
+  if (o.has.gjb2 && (o.pitch || o.bought.music)) {
+    deafMusicLives++;
+    assert(!/소리를 듣고|공연장 무대|음악 학원/.test(story), 'deaf life has no hearing-based music scenes');
+  }
+}
+assert(blindLives > 0 && deafMusicLives > 0);
 // SVG finite geometry across age, hair, sex, props and assistive devices.
 const ages = [0, .74, .75, 1, 3, 7, 12, 18, 25, 40, 64, 80, 100];
 const props = [null, 'backpack', 'trophy', 'mic', 'bouquet', 'baby', 'gradcap', 'medal', 'note', 'book'];
@@ -201,4 +244,4 @@ assert.equal(player.t, 2); assert.equal(player.motionTime, 100); assert.equal(fr
 BF.motion.reduced = () => true;
 player.fxEl = { innerHTML: 'old particles' }; player.burst('happy');
 assert.equal(player.fxEl.innerHTML, '');
-console.log(JSON.stringify({ samples: 100000, counts, perType, qrRecords: 4000, renderCount, poseRenderCount, mobilityStories, sceneMappings: performances.length, checks: 'PASS' }, null, 2));
+console.log(JSON.stringify({ samples: 100000, counts, perType, qrRecords: 4000, familyLives, singles, parents, blindLives, deafMusicLives, renderCount, poseRenderCount, mobilityStories, sceneMappings: performances.length, checks: 'PASS' }, null, 2));

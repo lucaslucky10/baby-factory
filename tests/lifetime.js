@@ -1,7 +1,7 @@
 'use strict';
 const baseline=BF.sim.build(BF.sim.decodeResult('bIAACiAAAAAAAABhqAACI2btlZjro6gBr')).o;
 const supports=['none','wheel','cane'];
-function model(career,index,support){return {...baseline,seed:37+index,career,sex:['F','M','N'][index%3],hair:['straight','wavy','curly'][Math.floor(index/3)%3],hairloss:false,has:support==='wheel'?{smn1:true}:support==='cane'?{rpe65:true}:{},persona:'social',iq:130,pitch:true,kids:true,grandkids:true,sport:index%2?'sprint':'endurance',endAge:100};}
+function model(career,index,support){return {...baseline,seed:37+index,career,sex:['F','M','N'][index%3],hair:['straight','wavy','curly'][Math.floor(index/3)%3],hairloss:false,has:support==='wheel'?{smn1:true}:support==='cane'?{rpe65:true}:{},persona:'social',iq:130,pitch:true,partner:true,kids:true,grandkids:true,sport:index%2?'sprint':'endurance',endAge:100};}
 const config={desktop:{W:1600,H:900,groundY:800,figureX:560,rulerX:120,topMargin:280},mobile:{W:1000,H:1150,groundY:1050,figureX:520,rulerX:90,topMargin:200}};
 function gallery(supportOnly=false){
  const target=document.querySelector('#gallery');target.innerHTML='';

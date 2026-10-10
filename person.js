@@ -122,7 +122,8 @@ var BF = window.BF || (window.BF = {});
     L.belly = o.belly ? U.smooth(36, 54, age) * 0.85 + U.smooth(60, 80, age) * 0.1 : U.smooth(60, 85, age) * 0.15;
 
     L.glasses = 'none';
-    if (o.myopia && age >= 9.8) L.glasses = 'round';
+    if (o.has && o.has.rpe65) L.glasses = 'none'; // 시각장애: 시력 교정 안경을 그리지 않음
+    else if (o.myopia && age >= 9.8) L.glasses = 'round';
     else if (!o.myopia && age >= 49) L.glasses = 'reading';
     L.acne = o.acne && age >= 13 && age < 19.5;
     L.braces = o.braces && age >= 12 && age < 14.2;

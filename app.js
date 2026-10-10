@@ -57,10 +57,14 @@
       if (rec) items.push(sim.build(rec));
     });
     var r = U.rng(U.newSeed(), 3);
+    // 샘플 아기 이름은 겹치지 않게 (오늘 만든 아기 이름도 피함)
+    var used = items.map(function (b) { return b.rec.name; });
+    var names = BF.BABY_NAMES.filter(function (n) { return used.indexOf(n) < 0; });
     while (items.length < 9) {
       var sel = sim.emptySel();
       BF.TRAITS.forEach(function (t, i) { if (r() < 0.35) sel[i] = 1 + Math.floor(r() * (t.opts.length - 1)); });
-      var rec2 = { seed: Math.floor(r() * 0xFFFFFF), sel: sel, edits: sim.emptyEdits(), guarantee: false, budget: 10000, order: 0, day: 0, name: U.pick(r, BF.BABY_NAMES) };
+      var name = names.length ? names.splice(Math.floor(r() * names.length), 1)[0] : U.pick(r, BF.BABY_NAMES);
+      var rec2 = { seed: Math.floor(r() * 0xFFFFFF), sel: sel, edits: sim.emptyEdits(), guarantee: false, budget: 10000, order: 0, day: 0, name: name };
       items.push(sim.build(rec2));
     }
     var html = '';
@@ -621,6 +625,7 @@
     clearInterval(lifeCountdown);
     $('btn-life').textContent = '인생 재생 ▶ ' + n;
     lifeCountdown = setInterval(function () {
+      if (!$('m-confirm').hidden || !$('m-settings').hidden) return; // 창이 떠 있는 동안은 멈춤
       n--;
       $('btn-life').textContent = '인생 재생 ▶ ' + n;
       if (n <= 0) { clearInterval(lifeCountdown); gotoLife(); }
@@ -763,6 +768,7 @@
     clearInterval(lifeCountdown);
     if (player) { player.stop(); player = null; }
     qsa('.modal').forEach(function (m) { m.hidden = true; });
+    settingsResume = null;
     $('o-timeup').hidden = true;
     S = null; current = null;
     if (showNote.tm) clearTimeout(showNote.tm); showNote.busy = false;
@@ -781,7 +787,19 @@
   }
 
   // ================= 설정 =================
+  // 설정 창이 떠 있는 동안 설계 타이머와 인생 재생을 멈췄다가, 닫으면 다시 이어 감
+  var settingsResume = null;
+  function closeSettings() {
+    closeModal('m-settings');
+    if (settingsResume) { settingsResume(); settingsResume = null; }
+  }
   function openSettings() {
+    if (!settingsResume) {
+      var timerWas = !!(S && S.timer && S.timer.running), playerWas = !!(player && !player.paused);
+      if (timerWas) pauseTimer();
+      if (playerWas) player.paused = true;
+      settingsResume = function () { if (timerWas) resumeTimer(); if (playerWas && player) player.paused = false; };
+    }
     $('set-presets').value = settings.presets.join(', ');
     $('set-timer').value = settings.timer;
     $('set-base').value = settings.baseUrl || '';
@@ -816,7 +834,7 @@
     Snd.setOn(settings.sound);
     $('btn-sound').classList.toggle('is-off', !settings.sound);
     saveSettings();
-    closeModal('m-settings');
+    closeSettings();
     if (screenId === 's-budget') renderPresets();
     if (screenId === 's-result' && current) renderQR(current);
     toast('설정을 저장했어요');
@@ -905,7 +923,7 @@
 
   $('btn-settings').addEventListener('click', openSettings);
   $('set-base').addEventListener('input', baseHint);
-  $('btn-set-cancel').addEventListener('click', function () { closeModal('m-settings'); });
+  $('btn-set-cancel').addEventListener('click', closeSettings);
   $('btn-set-save').addEventListener('click', saveSettingsFromForm);
   $('btn-reset-count').addEventListener('click', function () { U.store.set('order', 0); U.store.set('recent', []); $('set-count').textContent = '지금까지 0명 체험 · 다음 주문은 No.0001'; });
   $('btn-sound').addEventListener('click', function () {
@@ -924,7 +942,7 @@
     var typing = /INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '');
     if (e.key === 'Escape') {
       if (!$('m-explain').hidden) closeModal('m-explain');
-      else if (!$('m-settings').hidden) closeModal('m-settings');
+      else if (!$('m-settings').hidden) closeSettings();
       else if (!$('m-roulette').hidden && !spinning) closeModal('m-roulette');
       else if (!$('m-confirm').hidden) { closeModal('m-confirm'); if (askHome.resume) askHome.resume(); }
       return;

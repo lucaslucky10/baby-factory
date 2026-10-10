@@ -143,7 +143,8 @@ var BF = window.BF || (window.BF = {});
     o.weight = Math.round((2.8 + u.weight * 1.1) * 10) / 10;
     o.grayShift = (u.gray - 0.5) * 8;
     o.partner = u.partner < 0.62;
-    o.kids = o.partner ? u.kids < 0.72 : u.kids < 0.12;
+    // 이야기가 앞뒤가 맞도록: 결혼한 경우에만 자녀, 자녀가 있을 때만 손주
+    o.kids = o.partner && u.kids < 0.72;
     o.grandkids = o.kids && u.grandkids < 0.8;
     o.flavor = u.flavor;
     o.pet = ['콩이', '보리', '두부', '호두'][Math.floor(u.pet * 4)];
@@ -195,6 +196,8 @@ var BF = window.BF || (window.BF = {});
     }
     function srcOf(id) { return o.bought[id] ? 'bought' : 'natural'; }
     var h0 = Math.round(heightAt(o, 0) * 10) / 10;
+    // 감각 장애가 남아 있으면 그와 모순되는 장면(안경·노안, 소리 듣기)을 빼거나 바꿉니다.
+    var blind = !!o.has.rpe65, deaf = !!o.has.gjb2;
 
     // 0세: 탄생
     add(0, name + ' 탄생! ' + o.weight + 'kg, ' + h0 + 'cm.', { prio: 9, prop: null });
@@ -225,7 +228,8 @@ var BF = window.BF || (window.BF = {});
     else if (o.iq < 88) add(4, '글자보다 흙놀이와 블록 쌓기가 더 좋았어요.', { src: srcOf('iq'), prio: 3 });
     else add(4, '공룡 이름 쉰 개를 줄줄 외웠어요.', { src: 'life', prio: 2 });
     if (o.persona === 'social') add(5, '처음 보는 아이에게도 먼저 말을 거는 아이였어요.', { src: srcOf('persona'), prio: 4 });
-    if (o.pitch) add(5.5, '냉장고 소리를 듣고 "이건 시 플랫이야"라고 말해 가족을 놀라게 했어요.', { src: srcOf('music'), prio: 6, prop: 'note' });
+    if (deaf && o.bought.music) add(5.5, '절대음감을 주문했지만 소리를 듣기 어려워 음감을 확인할 길이 없었어요. 대신 북소리의 떨림을 손끝으로 느끼는 걸 좋아했어요.', { src: 'miss', prio: 6 });
+    else if (o.pitch && !deaf) add(5.5, '냉장고 소리를 듣고 "이건 시 플랫이야"라고 말해 가족을 놀라게 했어요.', { src: srcOf('music'), prio: 6, prop: 'note' });
 
     // 초등
     var tall = o.heightZ > 0.9, short = o.heightZ < -0.9;
@@ -238,7 +242,8 @@ var BF = window.BF || (window.BF = {});
     if (o.has.gjb2) add(8, '수어로 친구들과 수다 떠는 시간이 제일 즐거웠어요.', { src: 'natural', prio: 6 });
     if (o.freckle) add(9, '햇볕을 받으면 콧등에 주근깨가 별자리처럼 피어났어요.', { src: srcOf('freckle'), prio: 5 });
     if (o.has.hbb) add(9, '겨울이면 찾아오는 심한 통증 때문에 병원에 자주 입원했어요.', { src: 'natural', prio: 7, mood: 'soft' });
-    if (o.myopia) add(10, '칠판 글씨가 흐려져서 첫 안경을 맞췄어요.', { src: 'natural', prio: 5 });
+    if (blind) { if (o.bought.eyes) add(10, '평생 좋은 시력을 주문했지만, 망막 질환은 다른 유전자(RPE65) 문제라 막지 못했어요.', { src: 'miss', prio: 5 }); }
+    else if (o.myopia) add(10, '칠판 글씨가 흐려져서 첫 안경을 맞췄어요.', { src: 'natural', prio: 5 });
     else if (o.bought.eyes) add(10, '시력검사 결과 양쪽 모두 1.5! 맨 뒷자리에서도 칠판이 또렷했어요.', { src: 'bought', prio: 5 });
     if (o.iq >= 128) add(10.5, '교내 수학 경시대회 금상. 선생님이 영재교육원을 추천했어요.', { src: srcOf('iq'), prio: 5, prop: 'trophy' });
     else if (o.iq >= 110) add(10.5, '받아쓰기는 늘 100점이었어요.', { src: srcOf('iq'), prio: 3 });
@@ -247,7 +252,7 @@ var BF = window.BF || (window.BF = {});
     if (o.sport === 'sprint') add(11, (o.has.smn1 ? '운동회 휠체어 릴레이에서 친구들과 힘을 합쳤어요.' : '운동회 이어달리기의 마지막 주자로 뛰었어요.'), { src: srcOf('sport'), prio: 6, prop: 'medal' });
     if (o.sport === 'endurance') add(11, (o.has.smn1 ? '휠체어 경주에서 꾸준히 연습한 실력을 보여 줬어요.' : '오래달리기에서 학년 1등을 했어요.'), { src: srcOf('sport'), prio: 6, prop: 'medal' });
     if (o.sportMiss) add(11.5, '부모님은 운동 유전자를 샀지만, ' + Nn + (o.has.smn1 ? ' 운동보다 책 읽기를 더 좋아했어요.' : ' 달리기보다 책 읽기를 더 좋아했어요.'), { src: 'miss', prio: 7, prop: 'book' });
-    if (o.pitchMiss) add(9.5, '절대음감을 주문했지만 음악 학원은 금방 그만뒀어요. 음감은 훈련이 있어야 생기거든요.', { src: 'miss', prio: 6 });
+    if (o.pitchMiss && !deaf) add(9.5, '절대음감을 주문했지만 음악 학원은 금방 그만뒀어요. 음감은 훈련이 있어야 생기거든요.', { src: 'miss', prio: 6 });
 
     // 중학생
     if (o.braces) add(12, '치아 교정 시작. 2년 동안 떡볶이 먹기가 힘들었어요.', { src: 'natural', prio: 5 });
@@ -302,7 +307,7 @@ var BF = window.BF || (window.BF = {});
     if (o.has.smn1) add(21, '휠체어 농구팀에 들어가 전국 대회에 나갔어요.', { src: 'natural', prio: 6, prop: 'ball' });
     if (o.sport === 'endurance') add(21.5, (o.has.smn1 ? '휠체어를 타고 지역 스포츠 축제의 도전 코스를 완주했어요.' : '첫 풀코스 마라톤을 3시간 안에 완주했어요.'), { src: srcOf('sport'), prio: 6, prop: 'medal' });
     if (o.sport === 'sprint') add(21.5, (o.has.smn1 ? '휠체어 경주 대회에서 결승에 올랐어요.' : '전국체전 100m 결승에 올랐어요.'), { src: srcOf('sport'), prio: 6, prop: 'medal' });
-    if (o.pitch) add(22, '직접 만든 곡으로 작은 공연장 무대에 처음 섰어요.', { src: srcOf('music'), prio: 5, prop: 'mic' });
+    if (o.pitch && !deaf) add(22, '직접 만든 곡으로 작은 공연장 무대에 처음 섰어요.', { src: srcOf('music'), prio: 5, prop: 'mic' });
     if (o.iq >= 100) add(23, '대학 졸업! 학사모를 하늘 높이 던졌어요.', { src: 'life', prio: 6, prop: 'gradcap' });
     else add(23, '첫 월급으로 부모님께 따뜻한 겨울 외투를 선물했어요.', { src: 'life', prio: 6 });
     if (o.has.cftr) add(24.5, '새로 나온 표적 치료제 덕분에 숨쉬기가 훨씬 편해졌어요.', { src: 'natural', prio: 6 });
@@ -321,7 +326,7 @@ var BF = window.BF || (window.BF = {});
     if (o.hiv) add(30, 'HIV 걱정은 없었지만, 편집된 유전자가 몸의 다른 곳에 어떤 영향을 줄지는 아무도 확신하지 못했어요.', { src: 'bought', prio: 6, mood: 'soft' });
     if (o.has.brca1) add(30.5, '암 위험 때문에 해마다 빠짐없이 정밀 검진을 받았어요.', { src: 'natural', prio: 5, mood: 'soft' });
     if (o.shortSleep) add(31, '남들보다 하루가 4시간 더 길었어요. 그 시간에 책을 두 권 썼어요.', { src: srcOf('sleep'), prio: 4, prop: 'book' });
-    add(32, o.partner ? '사랑하는 사람을 만나 함께 살기로 했어요.' : '반려견 ' + o.pet + '와 함께 혼자만의 삶을 자유롭게 꾸려 갔어요.', { src: 'life', prio: 5 });
+    add(32, o.partner ? '사랑하는 사람을 만나 결혼했어요.' : '결혼하지 않고, 반려견 ' + o.pet + '와 함께 혼자만의 삶을 자유롭게 꾸려 갔어요.', { src: 'life', prio: 5 });
     if (o.kids) add(34, '첫 아이가 태어났어요. 아이의 유전자를 고를지 오래 고민했어요.', { src: 'life', prio: 6, prop: 'baby' });
     if (o.persona === 'social') add(36, '친구 결혼식 사회만 열한 번 봤어요.', { src: srcOf('persona'), prio: 3, prop: 'mic' });
 
@@ -342,7 +347,7 @@ var BF = window.BF || (window.BF = {});
       photographer: '첫 개인 사진전을 열었어요.', webtoon: '연재한 웹툰이 드라마로 만들어졌어요.', carpenter: '나무 냄새 가득한 공방을 열었어요.',
       farmer: '스마트팜에서 키운 딸기가 대박이 났어요.', translator: '뉴스 수어 통역을 맡게 됐어요.'
     })[o.career], { src: 'life', prio: 6, prop: 'trophy' });
-    add(49, o.myopia ? '다초점 안경으로 바꿨어요.' : o.bought.eyes ? '평생 좋은 시력도 노안은 피할 수 없었어요. 첫 돋보기를 샀어요.' : '휴대폰을 멀리 들고 보기 시작했어요. 노안이 온 거예요.',
+    if (!blind) add(49, o.myopia ? '다초점 안경으로 바꿨어요.' : o.bought.eyes ? '평생 좋은 시력도 노안은 피할 수 없었어요. 첫 돋보기를 샀어요.' : '휴대폰을 멀리 들고 보기 시작했어요. 노안이 온 거예요.',
       { src: o.bought.eyes ? 'miss' : 'life', prio: 4 });
     add(51, o.slowAging ? '쉰 살인데 다들 30대로 봤어요.' : '눈가에 웃음 주름이 자리를 잡았어요.', { src: srcOf('aging'), prio: 5 });
     if (o.heartEvent && !o.has.ldlr) add(56, '가벼운 심장 시술을 받은 뒤 매일 아침 산책을 시작했어요.', { src: 'natural', prio: 5, mood: 'soft' });
@@ -357,16 +362,17 @@ var BF = window.BF || (window.BF = {});
     if (o.has.smn1) add(71, (o.grandkids ? '휠체어를 타고 손주와 공원을 누볐어요.' : '휠체어를 타고 친구들과 공원을 누볐어요.'), { src: 'natural', prio: 5 });
     if (o.has.rpe65) add(71, '안내견 ' + o.pet + '와 함께 매일 산책을 했어요.', { src: 'natural', prio: 5 });
     if (o.has.gjb2) add(72, '수어 모임 친구들과 50년째 우정을 이어 갔어요.', { src: 'natural', prio: 5 });
-    if (o.alzEvent) add(78, '기억이 자주 흐려졌어요. 가족들이 곁에서 기억을 붙잡아 주었어요.', { src: o.bought.alz ? 'miss' : 'natural', prio: 6, mood: 'soft' });
-    else if (o.bought.alz) add(78, '여든을 앞두고도 손주들 생일을 하나도 잊지 않았어요.', { src: 'bought', prio: 5 });
+    if (o.alzEvent) add(78, '기억이 자주 흐려졌어요. ' + (o.partner ? '가족들이' : '오랜 친구들이') + ' 곁에서 기억을 붙잡아 주었어요.', { src: o.bought.alz ? 'miss' : 'natural', prio: 6, mood: 'soft' });
+    else if (o.bought.alz) add(78, '여든을 앞두고도 ' + (o.grandkids ? '손주들' : '친구들') + ' 생일을 하나도 잊지 않았어요.', { src: 'bought', prio: 5 });
     if (o.longevity && o.endAge >= 86) add(84, (o.has.smn1 ? '여든넷에도 휠체어를 타고 매일 아침 동네 공원에 나갔어요.' : '여든넷에도 매일 아침 동네 뒷산을 올랐어요.'), { src: 'bought', prio: 5 });
 
     // 마지막
     var nBought = Object.keys(o.bought).length + o.disorders.filter(function (x) { return x.status !== 'kept'; }).length;
-    var grand = o.sex === 'F' ? '할머니' : '할아버지';
+    var asker = o.grandkids ? '손주' : '아이';
+    var who = o.grandkids ? (o.sex === 'F' ? '할머니' : '할아버지') : (o.sex === 'F' ? '엄마' : '아빠');
     var ending;
-    if (o.grandkids) {
-      ending = '손주가 물었어요. "' + grand + '는 태어날 때 뭘 골랐어요?" ' +
+    if (o.kids) {
+      ending = U.josa(asker, '이', '가') + ' 물었어요. "' + who + '는 태어날 때 뭘 골랐어요?" ' +
         (nBought >= 3 ? '"내가 고른 건 하나도 없단다. 전부 누군가 골라 준 거지."'
           : nBought > 0 ? '"나는 아무것도 고르지 않았단다. 몇 가지는 부모님이 골라 주셨지. 그게 나다운 건지는 아직도 모르겠구나."'
             : '"아무것도 고르지 않았단다. 전부 자연이 준 거지. 그래서 다 내 것 같았어."');
