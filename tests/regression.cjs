@@ -59,6 +59,54 @@ for (let seed = 0; seed < 12; seed++) {
     renderCount++;
   }
 }
+// Story meaning selects a pose without rewriting the encoded life story.
+const performances = [
+  ['책 읽는 시간', 'book', 'happy', 'read', 'focused'],
+  ['첫 무대에서 노래했어요', 'mic', 'happy', 'perform', 'singing'],
+  ['금상을 수상했어요', 'trophy', 'happy', 'celebrate', 'delighted'],
+  ['매일 달리기를 했어요', 'medal', 'happy', 'run', 'focused'],
+  ['아기를 품에 안았어요', 'baby', 'happy', 'cradle', 'gentle'],
+  ['자기 얼굴의 일부를 골랐다는 걸 알게 됐어요', 'trophy', 'soft', 'think', 'thoughtful'],
+  ['치료가 힘들었어요', 'mic', 'soft', 'idle', 'concerned'],
+  ['친구와 입학했어요', 'backpack', 'happy', 'wave', 'smile'],
+  ['은퇴 축하 꽃다발', 'bouquet', 'happy', 'welcome', 'shy']
+];
+for (const [text, prop, mood, action, expression] of performances) {
+  const scene = { items: [{ text }], prop, mood }, before = JSON.stringify(scene);
+  const acting = BF.Stage.performanceFor(scene);
+  assert.equal(acting.action, action); assert.equal(acting.expression, expression);
+  assert.equal(JSON.stringify(scene), before, 'presentation must not mutate the story');
+  if (mood === 'soft') assert.equal(acting.prop, null, 'no celebratory prop during difficult scenes');
+}
+const model = { ...BF.sim.build(record(42)).o, has: {} };
+const actions = ['idle', 'read', 'perform', 'celebrate', 'run', 'cradle', 'think', 'wave', 'welcome', 'cheer'];
+let poseRenderCount = 0;
+for (const sex of ['M', 'F', 'N']) for (const age of ages) for (const action of actions) for (const phase of [0, .3, 1.2]) {
+  for (const has of [{}, { smn1: true }, { rpe65: true }]) {
+    const svg = BF.Person.render({ ...model, sex, has }, age, { action, phase, poseMix: .7, expression: 'focused' });
+    assert(!/NaN|Infinity|undefined/.test(svg)); poseRenderCount++;
+  }
+}
+for (const action of ['run', 'wave', 'perform']) {
+  assert.notEqual(BF.Person.render(model, 23, { action, phase: 0 }), BF.Person.render(model, 23, { action, phase: .6 }), action + ' must move');
+}
+for (const has of [{ smn1: true }, { rpe65: true }]) {
+  const supported = { ...model, has };
+  assert.equal(BF.Person.render(supported, 23, { action: 'run', phase: .6 }), BF.Person.render(supported, 23, { action: 'cheer', phase: .6 }), 'keep mobility support during sports');
+}
+const identityKeys = ['faceType', 'hairPart', 'faceWidth', 'eyeWidth', 'eyeSpace', 'eyeLift', 'browArch'];
+const identity = o => identityKeys.map(k => BF.Person.look(o, 23, {})[k]);
+equal(identity(model), identity({ ...model, has: { smn1: true }, bought: {} }), 'face identity independent of purchases and conditions');
+assert(new Set(Array.from({ length: 32 }, (_, seed) => JSON.stringify(identity({ ...model, seed })))).size === 32);
+// Reduced motion retains the scene pose, while freezing figure geometry at a given age.
+const motionOriginal = BF.motion.reduced;
+BF.motion.reduced = () => true;
+const staticPlayer = new BF.Stage.Player({}, { W: 1000, H: 900, groundY: 800, figureX: 500, rulerX: 100 });
+Object.assign(staticPlayer, { o: model, figEl: {}, rulerEl: {}, bdEls: [], t: 2 });
+const segment = { type: 'hold', t0: 0, t1: 4, scene: { items: [{ text: '독서' }], prop: 'book', mood: 'happy' } };
+staticPlayer.draw(23, 1000, segment); const stillFigure = staticPlayer.figEl.innerHTML;
+staticPlayer.draw(23, 3000, segment); assert.equal(staticPlayer.figEl.innerHTML, stillFigure);
+BF.motion.reduced = motionOriginal;
 // Pausing must freeze all figure motion; reduced motion must suppress SVG particles.
 let frames = 0, pausedSvg = 0;
 const svg = { pauseAnimations() { pausedSvg++; }, unpauseAnimations() {} };
@@ -69,4 +117,4 @@ assert.equal(player.t, 2); assert.equal(player.motionTime, 100); assert.equal(fr
 BF.motion.reduced = () => true;
 player.fxEl = { innerHTML: 'old particles' }; player.burst('happy');
 assert.equal(player.fxEl.innerHTML, '');
-console.log(JSON.stringify({ samples: 100000, counts, perType, qrRecords: 4000, renderCount, checks: 'PASS' }, null, 2));
+console.log(JSON.stringify({ samples: 100000, counts, perType, qrRecords: 4000, renderCount, poseRenderCount, sceneMappings: performances.length, checks: 'PASS' }, null, 2));

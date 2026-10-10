@@ -103,6 +103,32 @@ var BF = window.BF || (window.BF = {});
   }
 
   // ---------------- 인생 재생기 ----------------
+  // 이야기 데이터/QR은 그대로 두고, 실제 장면의 내용으로 연기를 고릅니다.
+  function performanceFor(scene) {
+    if (!scene) return { action: 'idle', expression: 'smile', prop: null, mood: 'happy' };
+    var text = scene.items.map(function (it) { return it.text; }).join(' ');
+    var prop = scene.prop, action = 'idle', expression = 'smile';
+    if (scene.final) { action = 'welcome'; expression = 'gentle'; }
+    else if (/무사히 치료|완주|금상|1등|수상/.test(text) && scene.mood !== 'soft') { action = prop === 'medal' ? 'run' : 'celebrate'; expression = 'delighted'; }
+    else if (scene.mood === 'soft') {
+      action = /알게 됐|확신|고민|기억/.test(text) ? 'think' : 'idle';
+      expression = /무사히|가족|곁에서/.test(text) ? 'gentle' : action === 'think' ? 'thoughtful' : 'concerned';
+      prop = null;
+    }
+    else if (prop === 'baby') { action = 'cradle'; expression = 'gentle'; }
+    else if (prop === 'book' || prop === 'pencil') { action = 'read'; expression = 'focused'; }
+    else if (prop === 'mic' || prop === 'note') { action = 'perform'; expression = 'singing'; }
+    else if (prop === 'medal') { action = 'run'; expression = 'focused'; }
+    else if (prop === 'trophy' || prop === 'gradcap') { action = 'celebrate'; expression = 'delighted'; }
+    else if (prop === 'bouquet') { action = 'welcome'; expression = 'shy'; }
+    else if (prop === 'backpack' || prop === 'briefcase') { action = 'wave'; expression = 'smile'; }
+    else if (prop === 'ball') { action = 'cheer'; expression = 'delighted'; }
+    else if (/사랑하는|결혼|함께 살/.test(text)) { action = 'welcome'; expression = 'shy'; }
+    else if (/어려|막혔|실패|다쳤|통증|여드름|흐려/.test(text)) { action = 'think'; expression = 'thoughtful'; }
+    else if (/친구|수다|선물|생일|입학/.test(text)) { action = 'wave'; expression = 'smile'; }
+    else if (/산책|운동|달리기/.test(text)) { action = 'run'; expression = 'smile'; }
+    return { action: action, expression: expression, prop: prop, mood: scene.mood };
+  }
   function Player(svg, opt) {
     this.svg = svg;
     this.W = opt.W; this.H = opt.H; this.gy = opt.groundY; this.fx = opt.figureX; this.rx = opt.rulerX; this.top = opt.topMargin || 60;
@@ -154,7 +180,7 @@ var BF = window.BF || (window.BF = {});
     var s = (this.gy - this.top) / this.cam;
     this.lastTop = topCm; this.lastScale = s;
     var holding = seg && seg.type === 'hold' && seg.scene;
-    var mood = holding ? seg.scene.mood : 'smile';
+    var acting = performanceFor(holding ? seg.scene : null);
     var still = BF.motion.reduced();
     var tt = still ? 0 : now / 1000;
     var blink = !still && (tt % 4.7) > 4.55;
@@ -163,8 +189,8 @@ var BF = window.BF || (window.BF = {});
     var bounce = !still && holding && seg.scene.mood === 'happy' ? Math.sin(U.clamp((this.t - seg.t0) / 0.8, 0, 1) * Math.PI) * 3 : 0;
     var inner = BF.Person.render(o, age, {
       sw: 3 / s, blink: blink, yaw: yaw, breathe: breathe, phase: still ? undefined : tt,
-      mood: mood === 'happy' ? 'happy' : mood === 'soft' ? 'soft' : 'smile',
-      prop: holding ? seg.scene.prop : null, wave: !still && holding && seg.scene.prop == null && seg.scene.mood === 'happy' && seg.idx % 3 === 0
+      mood: acting.mood, expression: acting.expression, action: acting.action, prop: acting.prop,
+      poseMix: !holding || still ? 1 : U.smooth(0, 0.5, this.t - seg.t0) * (seg.t1 == null ? 1 : 1 - U.smooth(seg.t1 - 0.35, seg.t1, this.t))
     });
     this.figEl.innerHTML = '<g transform="translate(' + f(this.fx) + ' ' + f(this.gy - bounce) + ') scale(' + f(s) + ')">' + inner + '</g>';
     for (var i = 0; i < this.bdEls.length; i++) this.bdEls[i].setAttribute('opacity', f(sceneOpacity(i, age)));
@@ -257,5 +283,5 @@ var BF = window.BF || (window.BF = {});
     this.draw(age, now || 0, sc ? { type: 'hold', scene: sc, t0: -10, idx: 1 } : null);
   };
 
-  BF.Stage = { Player: Player, backdrops: backdrops };
+  BF.Stage = { Player: Player, backdrops: backdrops, performanceFor: performanceFor };
 })(BF);
