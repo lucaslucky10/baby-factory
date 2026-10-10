@@ -29,14 +29,25 @@ var BF = window.BF || (window.BF = {});
     return stroke(d, U.mix(color, INK, 0.24), w + sw) + stroke(d, color, w);
   }
 
-  var HH = [[0, 25], [1, 32], [2, 35], [3, 38], [5, 42], [7, 45], [10, 48], [13, 51], [16, 53], [18, 54]];
-  var TORSO = [[0, 0.60], [1, 0.68], [3, 0.76], [6, 0.82], [10, 0.88], [14, 0.94], [18, 0.98]];
-  var NECK = [[0, 0.01], [1, 0.02], [3, 0.025], [10, 0.03], [16, 0.035]];
-  var HEADW = [[0, 1.14], [2, 1.12], [6, 1.10], [12, 1.06], [18, 1.04]];
-  var SHOULDER = { M: [[0, 0.95], [3, 0.96], [10, 1.02], [14, 1.07], [18, 1.12]], F: [[0, 0.95], [3, 0.96], [10, 1.0], [14, 1.04], [18, 1.08]] };
-  var HIP = { M: [[0, 1.0], [3, 0.94], [10, 0.88], [18, 0.94]], F: [[0, 1.0], [3, 0.94], [10, 0.9], [18, 1.04]] };
-  var ARMW = [[0, 0.30], [3, 0.29], [10, 0.28], [18, 0.28]];
-  var LEGW = [[0, 0.38], [3, 0.37], [10, 0.36], [18, 0.36]];
+  function ribbon(p0, p1, p2, w0, w1, w2, color, sw) {
+    function normal(a, b) { var dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1; return [-dy / len, dx / len]; }
+    var ns = [normal(p0, p1), normal(p0, p2), normal(p1, p2)];
+    function point(p, n, w, side) { return f(p[0] + n[0] * w * side / 2) + ' ' + f(p[1] + n[1] * w * side / 2); }
+    return path('M' + point(p0, ns[0], w0, 1) + 'Q' + point(p1, ns[1], w1, 1) + ' ' + point(p2, ns[2], w2, 1) + 'L' + point(p2, ns[2], w2, -1) + 'Q' + point(p1, ns[1], w1, -1) + ' ' + point(p0, ns[0], w0, -1) + 'Z', color, sw);
+  }
+  function hand(x, y, angle, w, skin, sw, open) {
+    var d = 'M' + f(-w * .34) + ' 0Q' + f(-w * .46) + ' ' + f(w * .7) + ' ' + f(-w * .22) + ' ' + f(w * 1.02) + 'Q0 ' + f(w * 1.2) + ' ' + f(w * .27) + ' ' + f(w * .93) + 'L' + f(w * .36) + ' ' + f(w * .5) + 'Q' + f(w * .72) + ' ' + f(w * .40) + ' ' + f(w * .55) + ' ' + f(w * .20) + 'L' + f(w * .30) + ' 0Z';
+    return '<g transform="translate(' + f(x) + ' ' + f(y) + ') rotate(' + f(angle) + ')">' + path(d, skin, sw * .45) + (open ? stroke('M0 ' + f(w * .75) + 'v' + f(w * .22), U.mix(skin, INK, .25), sw * .4) : '') + '</g>';
+  }
+
+  var HH = [[0, 23], [1, 27], [3, 30], [7, 33], [12, 36], [16, 38], [18, 39]];
+  var TORSO = [[0, 0.65], [1, 0.85], [3, 1.05], [7, 1.25], [12, 1.40], [18, 1.48]];
+  var NECK = [[0, 0.02], [3, 0.055], [10, 0.09], [18, 0.12]];
+  var HEADW = [[0, 1.06], [3, 1.00], [7, 0.96], [12, 0.90], [18, 0.86]];
+  var SHOULDER = { M: [[0, 0.88], [3, 0.90], [10, 1.02], [18, 1.20]], F: [[0, 0.88], [3, 0.90], [10, 0.96], [18, 1.06]] };
+  var HIP = { M: [[0, 0.88], [3, 0.85], [10, 0.86], [18, 0.90]], F: [[0, 0.88], [3, 0.85], [10, 0.86], [18, 0.98]] };
+  var ARMW = [[0, 0.24], [3, 0.21], [10, 0.19], [18, 0.19]];
+  var LEGW = [[0, 0.30], [3, 0.27], [10, 0.25], [18, 0.25]];
 
   function byS(tbl, sex, age) {
     if (sex === 'N') return (U.interp(tbl.M, age) + U.interp(tbl.F, age)) / 2;
@@ -52,10 +63,20 @@ var BF = window.BF || (window.BF = {});
   function look(o, age, opts) {
     var sex = o.sex, L = {};
     L.age = age;
+    // 인물마다 유지되는 얼굴 개성. 구매 여부나 장애 여부와 독립된 시드입니다.
+    var identity = U.rng(o.seed, 43);
+    L.faceType = Math.floor(identity() * 4);
+    L.hairPart = Math.floor(identity() * 4);
+    L.eyeSpace = 0.40 + identity() * 0.045;
+    L.eyeLift = (identity() - 0.5) * 0.12;
+    L.faceWidth = 0.88 + identity() * 0.16;
+    L.eyeWidth = 0.94 + identity() * 0.17;
+    L.browArch = identity() * 0.06;
+    L.sexF = sex === 'F';
     L.H = BF.sim.heightAt(o, age);
     var avgH = BF.sim.stdHeight(sex, age);
     L.hh = U.interp(HH, age) * Math.pow(L.H / avgH, 0.25);
-    L.hw = L.hh * U.interp(HEADW, age);
+    L.hw = L.hh * U.interp(HEADW, age) * L.faceWidth;
     L.neck = L.hh * U.interp(NECK, age);
     L.torso = L.hh * U.interp(TORSO, age);
     L.shoulderW = L.hh * byS(SHOULDER, sex, age) * (o.sport === 'sprint' && age > 15 ? 1.06 : 1);
@@ -99,9 +120,9 @@ var BF = window.BF || (window.BF = {});
     // 머리 모양
     if (age < 1) L.style = 'wisp';
     else if (age < 3) L.style = 'tuft';
-    else if (sex === 'F') L.style = age < 13 ? 'bob' : age < 66 ? 'long' : 'perm';
+    else if (sex === 'F') L.style = age < 13 ? 'bob' : age < 66 ? (L.hairPart === 1 ? 'bob' : 'long') : 'perm';
     else if (sex === 'N') L.style = 'mid';
-    else L.style = 'short';
+    else L.style = L.hairPart === 2 ? 'mid' : 'short';
     L.tex = o.hair;
     if (age < 1.5 && L.tex === 'curly') L.tex = 'wavy';
     L.eyelid = age < 0.6 && o.eyelid === 'double' ? 'inner' : o.eyelid;
@@ -169,14 +190,14 @@ var BF = window.BF || (window.BF = {});
     }
 
     var capOpacity = 1 - U.smooth(0.5, 0.7, L.recede);
-    var hairline = cy - b * (0.42 + L.recede * 0.5);
+    var hairline = cy - b * (0.40 + L.hairPart * 0.055 + L.recede * 0.5);
     if (style === 'wisp') {
       front.push({ raw: stroke('M' + f(hx - a * 0.08) + ' ' + f(cy - b * 0.98) + 'q' + f(a * 0.12) + ' ' + f(-b * 0.28) + ' ' + f(a * 0.26) + ' ' + f(-b * 0.08) + 'q' + f(a * 0.08) + ' ' + f(b * 0.12) + ' ' + f(-a * 0.06) + ' ' + f(b * 0.12), hc, sw * 1.6) });
       front.push({ raw: stroke('M' + f(hx - a * 0.3) + ' ' + f(cy - b * 0.9) + 'q' + f(a * 0.05) + ' ' + f(-b * 0.12) + ' ' + f(a * 0.14) + ' ' + f(-b * 0.1), hc, sw * 1.2) });
       return { back: back, front: front };
     }
     var sideDrop = { tuft: b * 0.05, short: b * 0.22, mid: b * 0.4, bob: b * 0.55, long: b * 0.55, perm: b * 0.3 }[style];
-    var kind = style === 'tuft' ? 'tuft' : (style === 'short' || style === 'mid') ? 'side' : style === 'bob' ? 'blunt' : style === 'long' ? 'curtain' : 'tuft';
+    var kind = style === 'tuft' ? 'tuft' : (style === 'short' || style === 'mid') ? (L.hairPart % 2 ? 'curtain' : 'side') : style === 'bob' ? (L.hairPart % 2 ? 'side' : 'blunt') : style === 'long' ? (L.hairPart === 3 ? 'side' : 'curtain') : 'tuft';
     if (style === 'perm') kind = 'tuft';
 
     if (style === 'bob' || style === 'long') {
@@ -210,6 +231,13 @@ var BF = window.BF || (window.BF = {});
         front.push({ d: 'M' + f(ex - sd * a * 0.05) + ' ' + f(cy - b * 0.35) + 'Q' + f(ex + sd * vol * 1.6) + ' ' + f(cy - b * 0.2) + ' ' + f(ex + sd * vol * 0.8) + ' ' + f(cy + b * 0.25) + 'L' + f(ex - sd * a * 0.12) + ' ' + f(cy + b * 0.1) + 'Z', op: so });
       }
     }
+    // 가르마와 결을 살린 얇은 하이라이트. 머리를 한 덩어리로 보이지 않게 합니다.
+    if (L.recede < 0.65) {
+      for (var strand = 0; strand < 3; strand++) {
+        var startX = hx + a * (0.18 + strand * 0.18);
+        front.push({ raw: stroke('M' + f(startX) + ' ' + f(cy - b * (0.88 - strand * 0.05)) + 'Q' + f(hx - a * 0.15) + ' ' + f(cy - b * 1.04) + ' ' + f(hx - a * (0.66 - strand * 0.12)) + ' ' + f(cy - b * (0.50 - strand * 0.08)), U.mix(hc, '#E9C9AA', 0.22), sw * 0.65, ' opacity="0.7"') });
+      }
+    }
     return { back: back, front: front };
   }
   function drawShapes(list, hc, sw) {
@@ -230,17 +258,20 @@ var BF = window.BF || (window.BF = {});
     var s = '';
     var yaw = opts.yaw || 0, fx = hx + yaw * a * 0.12;
     var eyeY = cy + b * 2 * U.interp([[0, 0.12], [3, 0.11], [10, 0.10], [18, 0.09]], L.age);
-    var ex = a * 0.44;
-    var erx = L.hh * U.interp([[0, 0.059], [6, 0.056], [18, 0.052]], L.age), ery = erx * 1.2;
+    var ex = a * L.eyeSpace;
+    var erx = L.hh * U.interp([[0, 0.061], [6, 0.063], [18, 0.077]], L.age) * L.eyeWidth, ery = erx * (L.age < 10 ? 1.06 : L.sexF ? 0.85 : 0.63);
     var lid = L.eyelid;
     if (lid === 'mono') ery *= 0.82;
     if (lid === 'double') { ery *= 1.06; erx *= 1.04; }
-    var mouthY = eyeY + b * 0.38, noseY = eyeY + b * 0.21;
+    var mouthY = eyeY + b * 0.48, noseY = eyeY + b * 0.28;
     var fsw = sw * 0.85;
-    var happy = opts.mood === 'happy';
+    var expression = opts.expression || (opts.mood === 'soft' ? 'gentle' : 'smile');
+    var happy = opts.mood === 'happy' && expression !== 'concerned' && expression !== 'thoughtful' && expression !== 'focused';
+    var concerned = expression === 'concerned', thoughtful = expression === 'thoughtful';
+    var delighted = expression === 'delighted', focused = expression === 'focused';
 
     // 볼터치
-    var blushOp = U.interp([[0, 0.48], [8, 0.42], [20, 0.34], [70, 0.30]], L.age);
+    var blushOp = (expression === 'shy' ? 1.8 : 1) * U.interp([[0, 0.48], [8, 0.32], [20, L.sexF ? 0.20 : 0.11], [70, 0.16]], L.age);
     s += ellipse(fx - a * 0.6, eyeY + b * 0.3, a * 0.21, b * 0.12, '#FF8E9E', 0, ' opacity="' + f(blushOp) + '"');
     s += ellipse(fx + a * 0.6, eyeY + b * 0.3, a * 0.21, b * 0.12, '#FF8E9E', 0, ' opacity="' + f(blushOp) + '"');
 
@@ -271,9 +302,9 @@ var BF = window.BF || (window.BF = {});
     // 눈썹
     var browC = U.mix(L.hairColor, INK, 0.25);
     var browY = eyeY - ery * 2.3 - (lid === 'double' ? ery * 0.12 : 0);
-    var soft = opts.mood === 'soft' ? b * 0.03 : 0;
-    s += stroke('M' + f(fx - ex - erx * 1.1) + ' ' + f(browY + b * 0.02 - soft) + 'q' + f(erx * 1.1) + ' ' + f(-b * 0.07) + ' ' + f(erx * 2.2) + ' ' + f(soft * 1.5), browC, fsw * 1.3);
-    s += stroke('M' + f(fx + ex + erx * 1.1) + ' ' + f(browY + b * 0.02 - soft) + 'q' + f(-erx * 1.1) + ' ' + f(-b * 0.07) + ' ' + f(-erx * 2.2) + ' ' + f(soft * 1.5), browC, fsw * 1.3);
+    var soft = concerned ? -b * 0.11 : thoughtful ? -b * 0.075 : focused ? -b * 0.05 : 0;
+    s += stroke('M' + f(fx - ex - erx * 1.1) + ' ' + f(browY + b * 0.02 - soft) + 'q' + f(erx * 1.1) + ' ' + f(-b * (0.04 + L.browArch)) + ' ' + f(erx * 2.2) + ' ' + f(soft * 1.5), browC, fsw * (L.sexF ? 1.0 : 1.6));
+    s += stroke('M' + f(fx + ex + erx * 1.1) + ' ' + f(browY + b * 0.02 - soft) + 'q' + f(-erx * 1.1) + ' ' + f(-b * (0.04 + L.browArch)) + ' ' + f(-erx * 2.2) + ' ' + f(soft * 1.5), browC, fsw * (L.sexF ? 1.0 : 1.6));
 
     // 눈
     [-1, 1].forEach(function (sd) {
@@ -282,16 +313,21 @@ var BF = window.BF || (window.BF = {});
         s += stroke('M' + f(x - erx) + ' ' + f(y) + 'q' + f(erx) + ' ' + f(ery * 0.7) + ' ' + f(erx * 2) + ' 0', INK, fsw * 1.2);
         return;
       }
-      if (happy && opts.squint) {
+      if (happy && (opts.squint || delighted)) {
         s += stroke('M' + f(x - erx) + ' ' + f(y + ery * 0.2) + 'q' + f(erx) + ' ' + f(-ery * 1.2) + ' ' + f(erx * 2) + ' 0', INK, fsw * 1.4);
         return;
       }
-      s += ellipse(x, y, erx, ery, '#2A1F1B', 0);
-      s += circle(x + sd * erx * 0.05 - erx * 0.3, y - ery * 0.38, erx * 0.34, '#FFFFFF', 0);
-
-      // 눈꺼풀 선
-      var lidW = lid === 'mono' ? fsw * 0.9 : fsw * 0.7;
-      s += stroke('M' + f(x - erx * 1.12) + ' ' + f(y - ery * 0.15) + 'Q' + f(x) + ' ' + f(y - ery * (lid === 'mono' ? 1.7 : 1.85)) + ' ' + f(x + erx * 1.12) + ' ' + f(y - ery * 0.15 - (lid === 'mono' ? sd * ery * 0.12 : 0)), INK, lidW);
+      var lift = (L.eyeLift + (L.faceType === 2 ? 0.07 : 0)) * b;
+      var outerY = y - lift, innerX = x - sd * erx * 1.22, outerX = x + sd * erx * 1.22;
+      var almond = 'M' + f(innerX) + ' ' + f(y) + 'Q' + f(x) + ' ' + f(y - ery * 1.30) + ' ' + f(outerX) + ' ' + f(outerY) + 'Q' + f(x) + ' ' + f(y + ery * 1.08) + ' ' + f(innerX) + ' ' + f(y) + 'Z';
+      s += path(almond, '#FFFCF6', 0);
+      var gaze = thoughtful ? erx * 0.18 : focused ? -erx * 0.12 : 0;
+      s += ellipse(x + gaze, y - ery * 0.03, erx * 0.60, ery * 0.78, U.mix(L.hairColor, '#9E7157', 0.5), 0);
+      s += ellipse(x + gaze, y - ery * 0.08, erx * 0.31, ery * 0.53, '#302A30', 0);
+      s += circle(x + gaze - erx * 0.20, y - ery * 0.36, erx * 0.21, '#FFFFFF', 0);
+      var lidW = fsw * (L.sexF && L.age >= 13 ? 1.45 : 1.05);
+      s += stroke('M' + f(innerX) + ' ' + f(y) + 'Q' + f(x) + ' ' + f(y - ery * 1.30) + ' ' + f(outerX) + ' ' + f(outerY), INK, lidW);
+      if (L.sexF && L.age >= 13) s += stroke('M' + f(outerX) + ' ' + f(outerY) + 'l' + f(sd * erx * 0.30) + ' ' + f(-ery * 0.38), INK, fsw);
       if (lid === 'double') {
         s += stroke('M' + f(x - sd * erx * 0.85) + ' ' + f(y - ery * 1.05) + 'Q' + f(x + sd * erx * 0.1) + ' ' + f(y - ery * 1.95) + ' ' + f(x + sd * erx * 1.25) + ' ' + f(y - ery * 0.75), INK, fsw * 0.95);
       } else if (lid === 'inner') {
@@ -303,8 +339,8 @@ var BF = window.BF || (window.BF = {});
     s += stroke('M' + f(fx - a * 0.05) + ' ' + f(noseY) + 'q' + f(a * 0.07) + ' ' + f(b * 0.04) + ' ' + f(a * 0.12) + ' ' + f(-b * 0.01), INK, fsw);
 
     // 입
-    var mw = a * (L.age < 2 ? 0.13 : 0.17);
-    var open = happy && !opts.closedMouth;
+    var mw = a * (L.age < 2 ? 0.13 : L.age < 13 ? 0.17 : 0.21);
+    var open = happy && !opts.closedMouth && (L.age < 13 || delighted || expression === 'singing');
     if (open) {
       var mh = b * (L.age < 2 ? 0.13 : 0.16);
       var md = 'M' + f(fx - mw) + ' ' + f(mouthY - b * 0.02) + 'Q' + f(fx) + ' ' + f(mouthY + mh * 1.25) + ' ' + f(fx + mw) + ' ' + f(mouthY - b * 0.02) + 'Z';
@@ -317,12 +353,16 @@ var BF = window.BF || (window.BF = {});
         }
       }
       s += ellipse(fx, mouthY + mh * 0.62, mw * 0.42, mh * 0.2, '#FF7F8F', 0);
+    } else if (concerned || thoughtful || focused) {
+      s += stroke('M' + f(fx - mw * 0.7) + ' ' + f(mouthY) + 'q' + f(mw * 0.7) + ' ' + f(concerned ? -b * 0.055 : b * 0.012) + ' ' + f(mw * 1.4) + ' 0', '#9D635C', fsw * 1.1);
     } else {
+      if (L.sexF && L.age >= 13) s += ellipse(fx, mouthY + b * 0.035, mw * 0.85, b * 0.045, '#C77F7D', 0, ' opacity="0.45"');
       s += stroke('M' + f(fx - mw) + ' ' + f(mouthY) + 'Q' + f(fx) + ' ' + f(mouthY + b * (opts.mood === 'soft' ? 0.06 : 0.11)) + ' ' + f(fx + mw) + ' ' + f(mouthY), INK, fsw * 1.1);
     }
-    if (L.dimple) {
-      s += stroke('M' + f(fx - mw * 1.45) + ' ' + f(mouthY - b * 0.03) + 'q' + f(-mw * 0.18) + ' ' + f(b * 0.05) + ' ' + f(0) + ' ' + f(b * 0.09), INK, fsw * 0.8);
-      s += stroke('M' + f(fx + mw * 1.45) + ' ' + f(mouthY - b * 0.03) + 'q' + f(mw * 0.18) + ' ' + f(b * 0.05) + ' ' + f(0) + ' ' + f(b * 0.09), INK, fsw * 0.8);
+    if (L.dimple && !concerned && !thoughtful && !focused) {
+      [-1, 1].forEach(function (sd) {
+        s += stroke('M' + f(fx + sd * mw * 1.35) + ' ' + f(mouthY - b * 0.018) + 'q' + f(sd * mw * 0.08) + ' ' + f(b * 0.022) + ' 0 ' + f(b * 0.04), '#BB8872', fsw * 0.7, ' opacity="0.65"');
+      });
     }
     // 안경
     if (L.glasses !== 'none') {
@@ -372,7 +412,11 @@ var BF = window.BF || (window.BF = {});
     switch (kind) {
       case 'backpack': break;
       case 'ball': s += circle(x, y + sc * 0.55, sc * 0.75, '#F25C54', sw) + stroke('M' + f(x - sc * 0.75) + ' ' + f(y + sc * 0.55) + 'q' + f(sc * 0.75) + ' ' + f(sc * 0.5) + ' ' + f(sc * 1.5) + ' 0', '#FFFFFF', sw * 1.2); break;
-      case 'book': s += path('M' + f(x - sc * 0.6) + ' ' + f(y - sc * 0.2) + 'h' + f(sc * 1.2) + 'v' + f(sc * 1.5) + 'h' + f(-sc * 1.2) + 'Z', '#4F7CAC', sw) + line(x - sc * 0.4, y + sc * 0.1, x + sc * 0.4, y + sc * 0.1, '#FFFFFF', sw); break;
+      case 'book':
+        s += path('M' + f(x) + ' ' + f(y) + 'q' + f(-sc * .6) + ' ' + f(-sc * .35) + ' ' + f(-sc * 1.1) + ' ' + f(-sc * .15) + 'v' + f(sc * 1.25) + 'q' + f(sc * .65) + ' ' + f(-sc * .12) + ' ' + f(sc * 1.1) + ' ' + f(sc * .18) + 'q' + f(sc * .45) + ' ' + f(-sc * .30) + ' ' + f(sc * 1.1) + ' ' + f(-sc * .18) + 'v' + f(-sc * 1.25) + 'q' + f(-sc * .5) + ' ' + f(-sc * .2) + ' ' + f(-sc * 1.1) + ' ' + f(sc * .15) + 'Z', '#FAF5E5', sw);
+        s += line(x, y, x, y + sc * 1.28, '#4F7CAC', sw);
+        for (var page = -1; page <= 1; page += 2) for (var row = 0; row < 3; row++) s += line(x + page * sc * .22, y + sc * (.22 + row * .23), x + page * sc * .88, y + sc * (.12 + row * .23), '#B3BAC0', sw * .55);
+        break;
       case 'pencil': s += path('M' + f(x - sc * 0.25) + ' ' + f(y - sc * 1.6) + 'h' + f(sc * 0.5) + 'v' + f(sc * 2.2) + 'l' + f(-sc * 0.25) + ' ' + f(sc * 0.6) + 'l' + f(-sc * 0.25) + ' ' + f(-sc * 0.6) + 'Z', '#FFCF5C', sw); break;
       case 'mic': s += line(x, y + sc * 0.1, x, y - sc * 1.0, INK, sc * 0.4) + circle(x, y - sc * 1.25, sc * 0.45, '#9AA5B8', sw); break;
       case 'stetho': s += stroke('M' + f(x - sc * 0.4) + ' ' + f(y - sc * 0.8) + 'q' + f(-sc * 0.2) + ' ' + f(sc * 1.4) + ' ' + f(sc * 0.4) + ' ' + f(sc * 1.4) + 'q' + f(sc * 0.6) + ' 0 ' + f(sc * 0.4) + ' ' + f(-sc * 1.4), '#5C677D', sw * 1.4) + circle(x, y + sc * 0.9, sc * 0.3, '#C6CDD8', sw); break;
@@ -411,6 +455,10 @@ var BF = window.BF || (window.BF = {});
     cy = chinY - b;
     var breathe = opts.breathe || 0;
     var phase = opts.phase || 0;
+    var action = opts.action || (opts.wave ? 'wave' : 'idle');
+    if ((seated || L.cane) && action === 'run') action = 'cheer';
+    var move = opts.phase == null ? 0 : Math.sin(phase * (action === 'run' ? 5 : 2));
+    var pose = opts.poseMix == null ? 1 : U.clamp(opts.poseMix, 0, 1);
     var col = outfitColors(L, pal);
     var sw2 = L.shoulderW / 2, hip2 = L.hipW / 2;
     var out = '';
@@ -455,40 +503,40 @@ var BF = window.BF || (window.BF = {});
         out += ellipse(-lx * 1.05, footY + shoeH * 0.3, L.legW * 0.7, shoeH * 0.6, col.shoe, sw);
         out += ellipse(lx * 1.05, footY + shoeH * 0.3, L.legW * 0.7, shoeH * 0.6, col.shoe, sw);
       } else {
-        var bareFrom = col.shorts ? hipY + legLen * 0.32 : col.skirt ? hipY + legLen * 0.45 : 0;
         [-1, 1].forEach(function (sd) {
-          var x = sd * lx;
-          if (bareFrom) {
-            out += limb(x, hipY, x * 1.02, -shoeH * 1.6, L.legW, L.skin, sw);
-            if (col.skirt) out += limb(x * 1.02, -legLen * 0.32, x * 1.02, -shoeH * 1.6, L.legW * 1.02, '#FFFFFF', sw * 0.6);
-            if (col.shorts) out += limb(x, hipY, x * 1.01, bareFrom, L.legW * 1.12, col.bottom, sw);
-          } else {
-            out += limb(x, hipY, x * 1.02, -shoeH * 1.6, L.legW, col.bottom, sw);
-            if (L.outfit === 'track') out += line(x + sd * L.legW * 0.32, hipY + hh * 0.1, x * 1.02 + sd * L.legW * 0.32, -shoeH * 1.5, '#FFFFFF', sw * 0.8);
-            if (L.outfit === 'fire') out += line(x - L.legW * 0.5, -legLen * 0.3, x + L.legW * 0.5, -legLen * 0.3, '#F7E15A', sw * 1.6);
-          }
-          // 둥근 운동화와 크림색 밑창. 발끝이 뾰족하게 꺾이지 않도록 합니다.
-          var shoeX = x * 1.02 + sd * L.legW * 0.08;
-          out += ellipse(shoeX, -shoeH * 0.65, L.legW * 0.64, shoeH * 0.65, col.shoe, sw * 0.8);
-          out += line(shoeX - L.legW * 0.50, -shoeH * 0.17, shoeX + L.legW * 0.50, -shoeH * 0.17, '#FFF8EC', shoeH * 0.25);
-          out += line(shoeX - L.legW * 0.14, -shoeH * 0.95, shoeX + L.legW * 0.14, -shoeH * 0.95, '#FFF8EC', sw * 1.1);
+          var x = sd * lx, lift = action === 'run' ? Math.max(0, move * sd) * hh * .48 * pose : 0;
+          var ankle = [x + sd * hh * .035 + (action === 'run' ? move * sd * hh * .12 * pose : 0), -shoeH * 1.3 - lift];
+          var knee = [x + sd * hh * .075, hipY * .48 - lift * .6];
+          var start = [x, hipY];
+          out += ribbon(start, knee, ankle, L.legW * 1.18, L.legW * .85, L.legW * .62, col.shorts || col.skirt ? L.skin : col.bottom, sw * .6);
+          if (col.shorts) out += ribbon(start, [x + sd * hh * .02, hipY + legLen * .16], [x + sd * hh * .04, hipY + legLen * .33], L.legW * 1.22, L.legW * 1.14, L.legW, col.bottom, sw * .6);
+          if (col.skirt) out += ribbon([ankle[0], -legLen * .26 - lift], [ankle[0], -legLen * .12 - lift], ankle, L.legW * .78, L.legW * .7, L.legW * .65, '#FFF9F2', sw * .4);
+          var shoeX = ankle[0] + sd * L.legW * .13;
+          out += ellipse(shoeX, -shoeH * .55 - lift, L.legW * .63, shoeH * .55, col.shoe, sw * .7);
+          out += line(shoeX - L.legW * .48, -shoeH * .13 - lift, shoeX + L.legW * .48, -shoeH * .13 - lift, '#FFF8EC', shoeH * .22);
+          if (L.outfit === 'track') out += stroke('M' + f(x + sd * L.legW * .35) + ' ' + f(hipY + hh * .1) + 'Q' + f(knee[0] + sd * L.legW * .3) + ' ' + f(knee[1]) + ' ' + f(ankle[0] + sd * L.legW * .2) + ' ' + f(ankle[1]), '#E8EFEA', sw * .8);
+          if (L.outfit === 'fire') out += line(knee[0] - L.legW * .35, knee[1], knee[0] + L.legW * .35, knee[1], '#F7E15A', sw * 1.6);
         });
         if (L.outfit === 'onesie') out += ellipse(0, hipY + hh * 0.05, hip2 * 1.05, hh * 0.22, col.bottom, sw);
       }
 
       // 몸통
-      var bel = L.belly * hh * 0.28, tTop = shoulderY + breathe * hh * 0.01;
+      var bel = L.belly * hh * 0.13, tTop = shoulderY + breathe * hh * 0.01;
       var coatExt = col.coat ? legLen * 0.4 : (L.outfit === 'apron' ? 0 : 0);
       var rr = Math.min(sw2 * 0.5, L.torso * 0.3);
       var bodyBottom = hipY + hh * 0.04;
       function torsoPath(extBottom) {
-        var yb = bodyBottom + extBottom;
-        var hem = Math.max(hip2, sw2 * 0.85) + (extBottom ? hh * 0.08 : 0), corner = hh * 0.10;
-        return 'M' + f(-sw2) + ' ' + f(tTop + rr) + 'Q' + f(-sw2) + ' ' + f(tTop) + ' ' + f(-sw2 + rr) + ' ' + f(tTop) + 'L' + f(sw2 - rr) + ' ' + f(tTop) + 'Q' + f(sw2) + ' ' + f(tTop) + ' ' + f(sw2) + ' ' + f(tTop + rr) +
-          'C' + f(sw2 + bel * 0.4) + ' ' + f(tTop + L.torso * 0.5) + ' ' + f(hip2 + bel) + ' ' + f(hipY - L.torso * 0.15) + ' ' + f(hem) + ' ' + f(yb - corner) +
-          'Q' + f(hem) + ' ' + f(yb) + ' ' + f(hem - corner) + ' ' + f(yb) + 'H' + f(-hem + corner) +
-          'Q' + f(-hem) + ' ' + f(yb) + ' ' + f(-hem) + ' ' + f(yb - corner) +
-          'C' + f(-hip2 - bel) + ' ' + f(hipY - L.torso * 0.15) + ' ' + f(-sw2 - bel * 0.4) + ' ' + f(tTop + L.torso * 0.5) + ' ' + f(-sw2) + ' ' + f(tTop + rr) + 'Z';
+        var yb = bodyBottom + extBottom, hem = hip2 + (extBottom ? hh * .07 : 0);
+        var waist = sw2 * (L.age < 10 ? .86 : L.sexF ? .70 : .78) + bel;
+        var neckW = a * .31, armpit = tTop + L.torso * .28;
+        return 'M' + f(-neckW) + ' ' + f(tTop) +
+          'Q' + f(-sw2 * .76) + ' ' + f(tTop + hh * .05) + ' ' + f(-sw2) + ' ' + f(tTop + hh * .17) +
+          'Q' + f(-sw2 * .97) + ' ' + f(armpit) + ' ' + f(-waist) + ' ' + f(tTop + L.torso * .63) +
+          'Q' + f(-hem) + ' ' + f(yb - hh * .08) + ' ' + f(-hem) + ' ' + f(yb - hh * .03) +
+          'Q0 ' + f(yb + hh * .07) + ' ' + f(hem) + ' ' + f(yb - hh * .03) +
+          'Q' + f(hem) + ' ' + f(yb - hh * .08) + ' ' + f(waist) + ' ' + f(tTop + L.torso * .63) +
+          'Q' + f(sw2 * .97) + ' ' + f(armpit) + ' ' + f(sw2) + ' ' + f(tTop + hh * .17) +
+          'Q' + f(sw2 * .76) + ' ' + f(tTop + hh * .05) + ' ' + f(neckW) + ' ' + f(tTop) + 'Z';
       }
       // 치마
       if (col.skirt && !seated) {
@@ -506,7 +554,7 @@ var BF = window.BF || (window.BF = {});
           for (var sn = 0; sn < 3; sn++) out += circle(0, nk + L.torso * (0.4 + sn * 0.2), hh * 0.025, '#FFFFFF', sw * 0.5);
           break;
         case 'kid':
-          out += path('M' + f(-sw2 + sw * 0.6) + ' ' + f(nk + L.torso * 0.45) + 'h' + f(sw2 * 2 - sw * 1.2) + 'v' + f(L.torso * 0.12) + 'h' + f(-sw2 * 2 + sw * 1.2) + 'Z', U.mix(col.top, '#FFFFFF', 0.55), 0);
+          out += path('M' + f(-sw2 * .88) + ' ' + f(nk + L.torso * 0.45) + 'h' + f(sw2 * 1.76) + 'v' + f(L.torso * 0.12) + 'h' + f(-sw2 * 1.76) + 'Z', U.mix(col.top, '#FFFFFF', 0.55), 0);
           out += stroke('M' + f(-cw) + ' ' + f(nk) + 'Q0 ' + f(nk + hh * 0.16) + ' ' + f(cw) + ' ' + f(nk), INK, sw * 0.8);
           break;
         case 'school':
@@ -548,8 +596,8 @@ var BF = window.BF || (window.BF = {});
           out += path('M' + f(-sw2 * 0.65) + ' ' + f(nk + L.torso * 0.32) + 'h' + f(sw2 * 0.4) + 'v' + f(hh * 0.13) + 'h' + f(-sw2 * 0.4) + 'Z', '#4AA9A7', sw * 0.6);
           break;
         case 'fire':
-          out += line(-sw2 * 0.92, nk + L.torso * 0.55, sw2 * 0.92, nk + L.torso * 0.55, '#F7E15A', sw * 2.2);
-          out += line(-sw2 * 0.95, nk + L.torso * 0.85, sw2 * 0.95, nk + L.torso * 0.85, '#F7E15A', sw * 2.2);
+          out += line(-sw2 * 0.76, nk + L.torso * 0.55, sw2 * 0.76, nk + L.torso * 0.55, '#F7E15A', sw * 2.2);
+          out += line(-sw2 * 0.80, nk + L.torso * 0.85, sw2 * 0.80, nk + L.torso * 0.85, '#F7E15A', sw * 2.2);
           break;
         case 'cardigan':
           out += path('M' + f(-cw) + ' ' + f(nk) + 'L0 ' + f(nk + L.torso * 0.45) + 'L' + f(cw) + ' ' + f(nk) + 'Z', '#F2EDE4', sw * 0.8);
@@ -581,45 +629,48 @@ var BF = window.BF || (window.BF = {});
         out += path('M' + f(-hip2 * 1.25) + ' ' + f(hipY) + 'h' + f(hip2 * 2.5) + 'v' + f(hh * 0.1) + 'h' + f(-hip2 * 2.5) + 'Z', '#59647A', sw);
       }
 
-      // 팔
-      var armLen = L.torso * 0.73 + hh * 0.04;
-      var spread = U.interp([[0, 0.5], [3, 0.32], [10, 0.2], [18, 0.14]], L.age) + breathe * 0.02;
-      var hands = {};
+      // 어깨 → 팔꿈치 → 손목의 한 실루엣. 손은 손목 방향을 따라갑니다.
+      var armLen = L.torso * .94, hands = {};
+      var propSide = L.cane ? -1 : 1;
       [-1, 1].forEach(function (sd) {
-        var sx = sd * (sw2 - L.armW * 0.42), sy = tTop + L.armW * 0.55;
-        var ang = spread + Math.sin(phase * 1.6 + sd * 0.65) * (opts.phase == null ? 0 : 0.035);
-        var holding = sd === 1 && opts.prop && ['backpack', 'medal', 'gradcap', 'note'].indexOf(opts.prop) < 0;
-        if (holding) ang = ['trophy', 'mic'].indexOf(opts.prop) >= 0 ? 2.5 : ['bouquet', 'baby'].indexOf(opts.prop) >= 0 ? 0.9 : 0.42;
-        if (sd === 1 && L.cane && !holding) ang = L.cane === 'white' ? 0.55 : 0.32;
-        if (seated && !holding) ang = 0.38;
-        if (opts.wave && sd === -1) ang = 2.22 + Math.sin(phase * 4.4) * 0.16;
-        var len = armLen * (['bouquet', 'baby'].indexOf(opts.prop) >= 0 && holding ? 0.7 : 1);
-        var exx = sx + sd * Math.sin(ang) * len, eyy = sy + Math.cos(ang) * len;
-        // 인사할 때는 위팔보다 팔꿈치 아래가 더 움직입니다.
-        if (opts.wave && sd === -1) {
-          var elbowX = sx - len * 0.55, elbowY = sy - len * 0.12;
-          var waveAngle = -0.28 + Math.sin(phase * 4.4) * 0.24;
-          exx = elbowX + Math.sin(waveAngle) * len * 0.5;
-          eyy = elbowY - Math.cos(waveAngle) * len * 0.5;
-          var armD = 'M' + f(sx) + ' ' + f(sy) + 'Q' + f(elbowX) + ' ' + f(sy + len * 0.08) + ' ' + f(elbowX) + ' ' + f(elbowY) + 'L' + f(exx) + ' ' + f(eyy);
-          out += stroke(armD, U.mix(col.sleeve, INK, 0.24), L.armW + sw) + stroke(armD, col.sleeve, L.armW);
-          out += ellipse(exx, eyy - L.armW * 0.18, L.armW * 0.46, L.armW * 0.60, L.skin, sw * 0.55);
-          out += circle(exx + L.armW * 0.34, eyy, L.armW * 0.22, L.skin, 0);
-          hands[sd] = [exx, eyy];
-          return;
+        var start = [sd * (sw2 - L.armW * .38), tTop + hh * .18];
+        var elbow = [sd * (sw2 + hh * .04), tTop + armLen * .55];
+        var wrist = [sd * (hip2 + hh * .12), tTop + armLen];
+        var targetE = elbow.slice(), targetW = wrist.slice();
+        var hold = sd === propSide && opts.prop && ['backpack', 'medal', 'gradcap', 'note'].indexOf(opts.prop) < 0;
+        if (hold) { targetE = [sd * (sw2 + hh * .12), tTop + armLen * .58]; targetW = [sd * (sw2 + hh * .14), tTop + armLen * .43]; }
+        if (action === 'read' || action === 'cradle') {
+          targetE = [sd * (sw2 + hh * .04), tTop + armLen * .68];
+          targetW = [sd * hh * .15, tTop + armLen * (action === 'read' ? .47 : .63) + sd * hh * .05];
+        } else if (action === 'think' && sd === -1) {
+          targetE = [-sw2 - hh * .02, tTop + armLen * .48]; targetW = [-a * .22, chinY + hh * .04];
+        } else if (action === 'perform' && sd === propSide) {
+          targetE = [sd * (sw2 + hh * .10), tTop + armLen * .48]; targetW = [sd * a * .42, chinY + hh * .20 + move * hh * .025];
+        } else if ((action === 'celebrate' || action === 'cheer' || action === 'wave') && (sd === -1 || action !== 'wave')) {
+          targetE = [sd * (sw2 + hh * .36), tTop + hh * .12];
+          targetW = [sd * (sw2 + hh * (.32 + move * .09)), tTop - hh * .42];
+        } else if (action === 'run') {
+          targetE = [sd * (sw2 + hh * .18), tTop + armLen * .48];
+          targetW = [sd * (sw2 - hh * .09), tTop + armLen * (.28 + sd * move * .17)];
+        } else if (action === 'welcome') {
+          targetE = [sd * (sw2 + hh * .25), tTop + armLen * .52]; targetW = [sd * (sw2 + hh * .46), tTop + armLen * .35];
         }
+        // 보행 보조기기를 든 손은 안전하게 유지합니다.
+        if (sd === 1 && L.cane) { targetE = [sw2 + hh * .08, tTop + armLen * .55]; targetW = [sw2 + hh * .24, tTop + armLen * .80]; }
+        if (seated && action === 'idle') { targetE = [sd * (sw2 + hh * .12), tTop + armLen * .6]; targetW = [sd * (hip2 + hh * .14), hipY]; }
+        elbow = elbow.map(function (v, i) { return U.lerp(v, targetE[i], pose); });
+        wrist = wrist.map(function (v, i) { return U.lerp(v, targetW[i], pose); });
         var shortSleeve = L.outfit === 'kid' && L.age >= 3;
+        out += ribbon(start, elbow, wrist, L.armW * .95, L.armW * .82, L.armW * .60, shortSleeve ? L.skin : col.sleeve, sw * .35);
         if (shortSleeve) {
-          var mx = sx + sd * Math.sin(ang) * len * 0.42, my = sy + Math.cos(ang) * len * 0.42;
-          out += limb(sx, sy, exx, eyy, L.armW * 0.82, L.skin, sw);
-          out += limb(sx, sy, mx, my, L.armW * 1.05, col.sleeve, sw);
+          var cuff = [U.lerp(start[0], elbow[0], .65), U.lerp(start[1], elbow[1], .65)];
+          out += ribbon(start, [U.lerp(start[0], cuff[0], .5), U.lerp(start[1], cuff[1], .5)], cuff, L.armW * 1.24, L.armW * 1.16, L.armW * 1.06, col.sleeve, sw * .3);
         } else {
-          out += limb(sx, sy, exx, eyy, L.armW, col.sleeve, sw);
-          if (L.outfit === 'track') out += line(sx + sd * L.armW * 0.25, sy, exx + sd * L.armW * 0.25, eyy - L.armW * 0.4, '#FFFFFF', sw * 0.7);
-          if (L.outfit === 'fire') { var fmx = sx + sd * Math.sin(ang) * len * 0.62, fmy = sy + Math.cos(ang) * len * 0.62; out += circle(fmx, fmy, L.armW * 0.18, '#F7E15A', 0); }
+          out += stroke('M' + f(wrist[0] - L.armW * .25) + ' ' + f(wrist[1]) + 'l' + f(L.armW * .5) + ' 0', U.mix(col.sleeve, INK, .18), sw * .6);
         }
-        out += ellipse(exx, eyy + L.armW * 0.22, L.armW * 0.47, L.armW * 0.56, L.skin, sw * 0.55);
-        hands[sd] = [exx, eyy + L.armW * 0.15];
+        var angle = Math.atan2(wrist[1] - elbow[1], wrist[0] - elbow[0]) * 180 / Math.PI - 90;
+        out += hand(wrist[0], wrist[1], angle, L.armW * .72, L.skin, sw, action === 'wave' || action === 'welcome');
+        hands[sd] = wrist;
       });
 
       // 지팡이
@@ -634,11 +685,16 @@ var BF = window.BF || (window.BF = {});
         out += stroke('M' + f(hx2 + hh * 0.05) + ' ' + f(hy2) + 'q' + f(-hh * 0.02) + ' ' + f(-hh * 0.12) + ' ' + f(-hh * 0.14) + ' ' + f(-hh * 0.06), '#9C6B43', sw * 1.8);
       }
       // 손에 든 물건
-      if (opts.prop && hands[1]) out += propSVG(opts.prop, hands[1][0], hands[1][1], hh * 0.22, sw * 0.8);
+      if (opts.prop && hands[propSide]) {
+        var held = hands[propSide];
+        var propX = action === 'cradle' || action === 'read' ? 0 : held[0];
+        var propY = action === 'cradle' ? tTop + armLen * .54 : action === 'read' ? tTop + armLen * .36 : held[1];
+        out += propSVG(opts.prop, propX, propY, hh * (action === 'cradle' ? .36 : .23), sw * .8);
+      }
     }
 
     // ---------------- 머리 ----------------
-    var tilt = opts.phase == null ? 0 : Math.sin(phase * 0.85) * 1.15;
+    var tilt = (action === 'read' ? 5 : action === 'think' ? -7 : action === 'cradle' ? -5 : action === 'perform' ? -3 : 0) * pose + (opts.phase == null ? 0 : Math.sin(phase * .85) * 1.1);
     out += '<g class="person-head" transform="rotate(' + f(tilt) + ' 0 ' + f(cy + b) + ')">';
     var yaw = opts.yaw || 0;
     var earX = a * 0.97, earY = cy + b * 0.12;
@@ -649,12 +705,13 @@ var BF = window.BF || (window.BF = {});
       out += path('M' + f(earX + a * 0.04) + ' ' + f(earY - b * 0.22) + 'q' + f(a * 0.2) + ' ' + f(b * 0.05) + ' ' + f(a * 0.14) + ' ' + f(b * 0.38) + 'l' + f(-a * 0.08) + ' 0q' + f(a * 0.04) + ' ' + f(-b * 0.25) + ' ' + f(-a * 0.08) + ' ' + f(-b * 0.32) + 'Z', '#4FC4BA', sw * 0.8);
       out += circle(earX + a * 0.02, earY - b * 0.42, a * 0.08, '#4FC4BA', sw * 0.8);
     }
-    var jaw = U.interp([[0, 1.05], [3, 1.02], [12, 0.99], [18, 0.96]], L.age);
+    var jaw = U.interp([[0, 1.02], [3, 0.96], [12, 0.83], [18, L.sexF ? 0.72 : 0.82]], L.age) + (L.faceType - 1.5) * .035;
+    var cheek = U.interp([[0, 1], [10, .96], [18, .86 + L.faceType * .025]], L.age);
     var k = 0.56, top0 = cy - b, bot0 = cy + b;
     var faceD = 'M' + f(-a) + ' ' + f(cy) + 'C' + f(-a) + ' ' + f(cy - k * b) + ' ' + f(-k * a) + ' ' + f(top0) + ' 0 ' + f(top0) +
       'C' + f(k * a) + ' ' + f(top0) + ' ' + f(a) + ' ' + f(cy - k * b) + ' ' + f(a) + ' ' + f(cy) +
-      'C' + f(a) + ' ' + f(cy + b * 0.6) + ' ' + f(jaw * a * 0.85) + ' ' + f(bot0 - b * 0.08) + ' 0 ' + f(bot0) +
-      'C' + f(-jaw * a * 0.85) + ' ' + f(bot0 - b * 0.08) + ' ' + f(-a) + ' ' + f(cy + b * 0.6) + ' ' + f(-a) + ' ' + f(cy) + 'Z';
+      'C' + f(a * cheek) + ' ' + f(cy + b * 0.56) + ' ' + f(jaw * a * 0.85) + ' ' + f(bot0 - b * 0.08) + ' 0 ' + f(bot0) +
+      'C' + f(-jaw * a * 0.85) + ' ' + f(bot0 - b * 0.08) + ' ' + f(-a * cheek) + ' ' + f(cy + b * 0.56) + ' ' + f(-a) + ' ' + f(cy) + 'Z';
     out += path(faceD, L.skin, sw);
     var fc = face(L, 0, cy, a, b, sw, o, opts);
     out += fc.svg;
@@ -694,7 +751,7 @@ var BF = window.BF || (window.BF = {});
     var topCm = Math.max(topOf(o, age), opts.minCm || 0) * 1.08;
     var scale = (h * 0.9) / topCm;
     var sw = (opts.px || 2.2) / scale;
-    var inner = render(o, age, { sw: sw, mood: opts.mood || 'happy', closedMouth: opts.closedMouth, prop: opts.prop, yaw: 0 });
+    var inner = render(o, age, { sw: sw, mood: opts.mood || 'happy', closedMouth: opts.closedMouth, prop: opts.prop, action: opts.action, expression: opts.expression, phase: opts.phase, yaw: 0 });
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '">' +
       (opts.bg ? '<rect width="' + w + '" height="' + h + '" fill="' + opts.bg + '"/>' : '') +
       '<g transform="translate(' + f(w / 2) + ' ' + f(h * 0.95) + ') scale(' + f(scale) + ')">' + inner + '</g></svg>';
