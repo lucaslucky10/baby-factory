@@ -5,7 +5,7 @@ var BF = window.BF || (window.BF = {});
 
 (function (BF) {
   var U = BF.util;
-  var DATA_VERSION = 1;
+  var DATA_VERSION = 2;
 
   function traitIndex(id) { for (var i = 0; i < BF.TRAITS.length; i++) if (BF.TRAITS[i].id === id) return i; return -1; }
   function disorderById(id) { for (var i = 0; i < BF.DISORDERS.length; i++) if (BF.DISORDERS[i].id === id) return BF.DISORDERS[i]; return null; }
@@ -33,17 +33,19 @@ var BF = window.BF || (window.BF = {});
   }
 
   // ---------------- 유전자 검사 ----------------
-  function screen(seed, guarantee) {
+  function screen(seed, guarantee, version) {
+    // 기존 QR(v1)은 당시 결과를 재현하고, 새 체험(v2)만 낮은 확률을 적용합니다.
+    var legacy = version === 1;
     var r = U.rng(seed, 1);
     var rolls = BF.DISORDERS.map(function () { return r(); });
     var found = [];
-    BF.DISORDERS.forEach(function (d, i) { if (rolls[i] < d.p) found.push(d.id); });
+    BF.DISORDERS.forEach(function (d, i) { if (rolls[i] < d.p * (legacy ? 1 : 0.5)) found.push(d.id); });
     if (!found.length && guarantee) {
       var rr = U.rng(seed, 9);
       found.push(U.weighted(rr, BF.DISORDERS, function (d) { return d.p; }).id);
     }
     var pickR = U.rng(seed, 10);
-    while (found.length > 3) found.splice(Math.floor(pickR() * found.length), 1);
+    while (found.length > (legacy ? 3 : 2)) found.splice(Math.floor(pickR() * found.length), 1);
     return found;
   }
 
@@ -125,7 +127,7 @@ var BF = window.BF || (window.BF = {});
     o.longevity = S('longevity') === 1;
 
     // 유전질환
-    var found = screen(seed, input.guarantee);
+    var found = screen(seed, input.guarantee, input.version);
     o.disorders = found.map(function (id) {
       var idx = -1;
       BF.DISORDERS.forEach(function (d, i) { if (d.id === id) idx = i; });
@@ -429,7 +431,7 @@ var BF = window.BF || (window.BF = {});
 
   function encodeResult(rec) {
     var w = new BitW();
-    w.put(DATA_VERSION, 4);
+    w.put(rec.version || DATA_VERSION, 4);
     w.put(rec.guarantee ? 1 : 0, 1);
     w.put(rec.seed & 0xFFFFFF, 24);
     BF.TRAITS.forEach(function (t, i) { w.put(rec.sel[i] || 0, 2); });
@@ -455,8 +457,8 @@ var BF = window.BF || (window.BF = {});
       if (checksum(bytes) !== sum) return null;
       var rd = new BitR(bytes);
       var ver = rd.get(4);
-      if (ver !== DATA_VERSION) return null;
-      var rec = { guarantee: rd.get(1) === 1, seed: rd.get(24), sel: [], edits: [] };
+      if (ver !== 1 && ver !== DATA_VERSION) return null;
+      var rec = { version: ver, guarantee: rd.get(1) === 1, seed: rd.get(24), sel: [], edits: [] };
       BF.TRAITS.forEach(function (t) { var v = rd.get(2); rec.sel.push(v < t.opts.length ? v : 0); });
       BF.DISORDERS.forEach(function () { rec.edits.push(rd.get(1) === 1); });
       rec.budget = rd.get(20);
@@ -471,8 +473,8 @@ var BF = window.BF || (window.BF = {});
 
   // 기록(rec) → 화면에 필요한 모든 것
   function build(rec) {
-    var found = screen(rec.seed, rec.guarantee);
-    var o = resolve({ seed: rec.seed, sel: rec.sel, edits: rec.edits, guarantee: rec.guarantee });
+    var found = screen(rec.seed, rec.guarantee, rec.version);
+    var o = resolve({ seed: rec.seed, sel: rec.sel, edits: rec.edits, guarantee: rec.guarantee, version: rec.version });
     var spent = cost(rec.sel, rec.edits, found);
     return { rec: rec, found: found, o: o, spent: spent, items: receiptItems(rec.sel, rec.edits, found), scenes: lifeEvents(o, rec.name) };
   }

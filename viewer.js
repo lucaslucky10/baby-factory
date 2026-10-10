@@ -105,15 +105,23 @@ var BF = window.BF || (window.BF = {});
     });
     player.load(b, rec.name);
     player.speed = 1.6;
+    var autoPlayTimer = 0;
     caption(b.scenes[0]);
     function caption(sc) {
       $('v-caption').innerHTML = '<b>' + Math.floor(sc.age) + '세</b> ' + sc.items.map(function (it) { return U.esc(it.text); }).join(' ');
     }
     $('v-play').addEventListener('click', function () {
+      clearTimeout(autoPlayTimer);
+      if (player.raf) {
+        player.paused = !player.paused;
+        this.textContent = player.paused ? '계속 재생' : '일시정지';
+        return;
+      }
       player.load(b, rec.name); player.speed = 1.6; player.play();
-      this.textContent = '재생 중…';
+      this.textContent = '일시정지';
     });
     $('v-range').addEventListener('input', function () {
+      clearTimeout(autoPlayTimer);
       var a = +this.value;
       player.stop();
       player.show(a, performance.now());
@@ -124,7 +132,9 @@ var BF = window.BF || (window.BF = {});
       $('v-play').textContent = '처음부터 재생';
     });
     // 자동 재생은 화면에 보일 때 한 번
-    setTimeout(function () { player.play(); $('v-play').textContent = '재생 중…'; }, 600);
+    if (!BF.motion.reduced()) {
+      autoPlayTimer = setTimeout(function () { player.play(); $('v-play').textContent = '일시정지'; }, 600);
+    }
 
     // 결과 카드 이미지
     var url = location.href;

@@ -624,3 +624,37 @@ html.is-viewer body { overflow: auto; overflow-x: hidden; background: var(--mint
 .v-foot { padding: 4px 4px 0; font-size: 13.5px; line-height: 1.5; }
 .v-foot p { margin: 0 0 4px; }
 .v-error h1 { font-family: var(--font-display); font-weight: 400; font-size: 30px; margin: 0 0 8px; }
+
+/* 그림책 속 작은 제작소 — 기존 조작판 배치와 기능은 그대로 유지 */
+#viewport { background: radial-gradient(ellipse at 50% 35%, #F9F3E9, #E6EDE6); }
+#stage { background-color: #EDF3E8; background-image: radial-gradient(#A8BCAB40 1.5px, transparent 1.5px); background-size: 28px 28px; }
+.sign { background: #F5C6BE; border-color: #74615C; box-shadow: 0 8px 0 #D8B8AA, 0 16px 36px #78695A14; }
+.sign::before, .sign::after { background: #9F9B85; }
+.sign-bulbs { animation: none; opacity: .8; }
+.logo { color: #FFFDF5; text-shadow: 0 4px 0 #74615C, 2px 0 0 #74615C, -2px 0 0 #74615C, 0 -2px 0 #74615C; }
+.box { background: #F9EAD7; border-color: #A69B85; border-radius: 24px 24px 10px 10px; }
+.box::before { border: 0; border-radius: 20px; background: #FFFDF5; }
+.box .box-label { background: #697E70; color: #FFFFFF; }
+.box .tag { background: #B65C70; border-color: #B65C70; transform: rotate(-3deg); }
+.belt-items { animation-duration: 64s; }
+.belt { background: #ABBCA8; border-color: #809480; }
+.belt i { background: repeating-linear-gradient(90deg, #829780 0 18px, transparent 18px 46px); animation-duration: 2.4s; }
+.incubator { background: #DCEBDF; border-color: #839B8C; box-shadow: 0 5px 0 #B5C8B8; }
+.inc-glass { border-color: #A7BDB0; border-radius: 70px 70px 20px 20px; background: radial-gradient(ellipse at 50% 35%, #FFFEF6 0%, #F1F3E6 65%, #DCE9DB 100%); }
+.inc-glass::before { background: #C7DBBC; border-top: 1px solid #B2C9A9; height: 12px; }
+.inc-glass::after { opacity: .35; }
+#preview { inset: 0 0 12px; height: calc(100% - 12px); }
+.bubbles i { animation-duration: 9s; border-color: #C4B58566; background: #FFEDB780; }
+.pod.is-busy .pod-body { animation: pod-breathe 3s ease-in-out infinite; }
+@keyframes pod-breathe { 50% { box-shadow: 0 0 30px 8px #FFEAB566; } }
+.pod-cap::before, .pod-cap::after { animation: lamp-soft 2.8s ease-in-out infinite; background: #E4C27E; }
+@keyframes lamp-soft { 50% { background: #F9E8AF; } }
+#pod-baby { transition: opacity .7s .3s, transform 1s .3s cubic-bezier(.22,.65,.3,1); transform: translateY(14px) scale(.94); }
+.pod.is-open #pod-baby { transform: translateY(0) scale(1); }
+.timer.is-danger { animation: none; background: #EF4B3C; }
+.card { animation: story-in .55s cubic-bezier(.22,.65,.3,1); }
+@keyframes story-in { from { opacity: 0; transform: translateY(16px); } }
+@media (prefers-reduced-motion: reduce) {
+  .belt-items, .belt i, .bubbles i, .pod.is-busy .pod-body, .pod-cap::before, .pod-cap::after { animation: none !important; }
+  #pod-baby { transition: none; }
+}
