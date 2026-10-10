@@ -128,7 +128,7 @@ var BF = window.BF || (window.BF = {});
       t += hold; cur = sc.age;
     });
     this.segs = segs; this.total = t; this.t = 0; this.lastScene = -1; this.cam = null;
-    this.age = 0;
+    this.age = 0; this.motionTime = 0; this.drawLast = null;
     this.draw(0, 0);
   };
   Player.prototype.ageAt = function (t) {
@@ -149,20 +149,22 @@ var BF = window.BF || (window.BF = {});
     // 카메라: 작을 때는 가까이, 클수록 멀리
     var topCm = BF.Person.topOf(o, age);
     var visCm = Math.max(96, topCm * 1.32);
-    if (this.cam == null) this.cam = visCm; else this.cam += (visCm - this.cam) * 0.08;
+    if (this.cam == null || BF.motion.reduced()) this.cam = visCm;
+    else this.cam += (visCm - this.cam) * (1 - Math.exp(-Math.min(100, this.frameDt || 33) / 180));
     var s = (this.gy - this.top) / this.cam;
     this.lastTop = topCm; this.lastScale = s;
     var holding = seg && seg.type === 'hold' && seg.scene;
     var mood = holding ? seg.scene.mood : 'smile';
-    var tt = now / 1000;
-    var blink = (tt % 3.7) < 0.13;
-    var yaw = Math.sin(tt * 0.9) * 0.5;
-    var breathe = (Math.sin(tt * 2.2) + 1) / 2;
-    var bounce = holding ? Math.max(0, Math.sin(Math.min(1, (this.t - seg.t0) * 3) * Math.PI)) * 8 : 0;
+    var still = BF.motion.reduced();
+    var tt = still ? 0 : now / 1000;
+    var blink = !still && (tt % 4.7) > 4.55;
+    var yaw = Math.sin(tt * 0.85) * 0.25;
+    var breathe = still ? 0 : Math.sin(tt * 1.8);
+    var bounce = !still && holding && seg.scene.mood === 'happy' ? Math.sin(U.clamp((this.t - seg.t0) / 0.8, 0, 1) * Math.PI) * 3 : 0;
     var inner = BF.Person.render(o, age, {
-      sw: 3 / s, blink: blink, yaw: yaw, breathe: breathe,
+      sw: 3 / s, blink: blink, yaw: yaw, breathe: breathe, phase: still ? undefined : tt,
       mood: mood === 'happy' ? 'happy' : mood === 'soft' ? 'soft' : 'smile',
-      prop: holding ? seg.scene.prop : null, wave: holding && seg.scene.prop == null && seg.scene.mood === 'happy' && seg.idx % 3 === 0
+      prop: holding ? seg.scene.prop : null, wave: !still && holding && seg.scene.prop == null && seg.scene.mood === 'happy' && seg.idx % 3 === 0
     });
     this.figEl.innerHTML = '<g transform="translate(' + f(this.fx) + ' ' + f(this.gy - bounce) + ') scale(' + f(s) + ')">' + inner + '</g>';
     for (var i = 0; i < this.bdEls.length; i++) this.bdEls[i].setAttribute('opacity', f(sceneOpacity(i, age)));
@@ -188,13 +190,14 @@ var BF = window.BF || (window.BF = {});
     this.onTick(age, H);
   };
   Player.prototype.burst = function (mood) {
+    if (BF.motion.reduced()) { this.fxEl.innerHTML = ''; return; }
     var cols = mood === 'soft' ? ['#B8D8F0', '#E6D6F5', '#FFFFFF'] : ['#FFD23F', '#FF6F91', '#8EC9F0', '#7FDCA6'];
     var headY = this.gy - (this.lastTop || 100) * (this.lastScale || 3);
     var g = '', cx = this.fx, cy = headY + 10, r0 = 70;
-    for (var i = 0; i < 18; i++) {
-      var ang = Math.PI + (i / 17) * Math.PI, d = 150 + (i % 3) * 40;
+    for (var i = 0; i < 10; i++) {
+      var ang = Math.PI + (i / 9) * Math.PI, d = 100 + (i % 3) * 24;
       var x0 = cx + Math.cos(ang) * r0, y0 = cy + Math.sin(ang) * r0, x1 = cx + Math.cos(ang) * d, y1 = cy + Math.sin(ang) * d;
-      g += '<circle cx="' + f(x0) + '" cy="' + f(y0) + '" r="' + (6 + (i % 4) * 2) + '" fill="' + cols[i % cols.length] + '" stroke="' + INK + '" stroke-width="2"><animate attributeName="cx" from="' + f(x0) + '" to="' + f(x1) + '" dur="0.9s" fill="freeze"/><animate attributeName="cy" from="' + f(y0) + '" to="' + f(y1) + '" dur="0.9s" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="0.9s" fill="freeze"/></circle>';
+      g += '<circle cx="' + f(x0) + '" cy="' + f(y0) + '" r="' + (6 + (i % 4) * 2) + '" fill="' + cols[i % cols.length] + '" stroke="' + INK + '" stroke-width="2"><animate attributeName="cx" from="' + f(x0) + '" to="' + f(x1) + '" dur="1.4s" calcMode="spline" keyTimes="0;1" keySplines="0.2 0.65 0.3 1" fill="freeze"/><animate attributeName="cy" from="' + f(y0) + '" to="' + f(y1) + '" dur="1.4s" calcMode="spline" keyTimes="0;1" keySplines="0.2 0.65 0.3 1" fill="freeze"/><animate attributeName="opacity" from="1" to="0" dur="1.4s" calcMode="spline" keyTimes="0;1" keySplines="0.2 0.65 0.3 1" fill="freeze"/></circle>';
     }
     this.fxEl.innerHTML = g;
   };
@@ -203,25 +206,41 @@ var BF = window.BF || (window.BF = {});
     if (this.last == null) this.last = now;
     var dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    if (!this.paused) this.t += dt * this.speed;
+    // 일시정지하면 눈 깜박임과 호흡도 함께 멈춥니다.
+    if (this.paused) {
+      this.svg.pauseAnimations && this.svg.pauseAnimations();
+      this.raf = requestAnimationFrame(function (n) { self.loop(n); });
+      return;
+    }
+    this.svg.unpauseAnimations && this.svg.unpauseAnimations();
+    this.t += dt * this.speed;
+    this.motionTime += dt * 1000;
+    // SVG 갱신은 최대 30fps. 재생 시간은 실제 경과 시간으로 계산합니다.
+    if (this.drawLast != null && now - this.drawLast < 1000 / 30 && this.t < this.total) {
+      this.raf = requestAnimationFrame(function (n) { self.loop(n); });
+      return;
+    }
+    this.frameDt = this.drawLast == null ? 33 : now - this.drawLast;
+    this.drawLast = now;
     var st = this.ageAt(this.t);
     if (st.seg && st.seg.type === 'hold' && st.seg.idx !== this.lastScene) {
       this.lastScene = st.seg.idx;
       this.onScene(st.seg.scene, st.seg.idx);
       this.burst(st.seg.scene.mood);
     }
-    this.draw(st.age, now, st.seg);
+    this.draw(st.age, this.motionTime, st.seg);
     if (this.t >= this.total) { this.stop(); this.onEnd(); return; }
     this.raf = requestAnimationFrame(function (n) { self.loop(n); });
   };
   Player.prototype.play = function () {
     var self = this;
-    this.stop(); this.last = null; this.paused = false;
+    this.stop(); this.last = null; this.drawLast = null; this.paused = false;
     this.raf = requestAnimationFrame(function (n) { self.loop(n); });
   };
-  Player.prototype.stop = function () { if (this.raf) cancelAnimationFrame(this.raf); this.raf = 0; };
+  Player.prototype.stop = function () { if (this.raf) cancelAnimationFrame(this.raf); this.raf = 0; this.svg.pauseAnimations && this.svg.pauseAnimations(); };
   Player.prototype.skip = function () {
     this.stop();
+    this.fxEl.innerHTML = '';
     var last = this.scenes[this.scenes.length - 1];
     for (var i = this.lastScene + 1; i < this.scenes.length; i++) this.onScene(this.scenes[i], i, true);
     this.lastScene = this.scenes.length - 1;
@@ -232,6 +251,7 @@ var BF = window.BF || (window.BF = {});
   // 특정 나이로 이동 (모바일 결과 페이지의 슬라이더용)
   Player.prototype.show = function (age, now) {
     var sc = null;
+    this.fxEl.innerHTML = '';
     this.cam = null;
     for (var i = 0; i < this.scenes.length; i++) if (Math.abs(this.scenes[i].age - age) < 0.01) sc = this.scenes[i];
     this.draw(age, now || 0, sc ? { type: 'hold', scene: sc, t0: -10, idx: 1 } : null);

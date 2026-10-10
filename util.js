@@ -130,6 +130,12 @@ var BF = window.BF || (window.BF = {});
     return d.getUTCFullYear() + '.' + String(d.getUTCMonth() + 1).padStart(2, '0') + '.' + String(d.getUTCDate()).padStart(2, '0');
   }
 
+  // CSS와 SVG/JS가 같은 접근성 설정을 사용합니다.
+  var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  BF.motion = {
+    reduced: function () { return !!(motionQuery && motionQuery.matches); }
+  };
+
   BF.util = {
     rng: rng, normal: normal, pick: pick, weighted: weighted, newSeed: newSeed,
     clamp: clamp, lerp: lerp, smooth: smooth, interp: interp, mix: mix,

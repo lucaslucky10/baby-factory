@@ -13,6 +13,10 @@
   function loadSettings() {
     var saved = U.store.get('settings', {}) || {}, out = {};
     Object.keys(BF.DEFAULTS).forEach(function (k) { out[k] = saved[k] !== undefined ? saved[k] : BF.DEFAULTS[k]; });
+    if (saved.screeningVersion !== BF.DEFAULTS.screeningVersion) {
+      out.guarantee = false;
+      out.screeningVersion = BF.DEFAULTS.screeningVersion;
+    }
     if (!Array.isArray(out.presets) || !out.presets.length) out.presets = BF.DEFAULTS.presets.slice();
     return out;
   }
@@ -430,10 +434,12 @@
     pv.raf = requestAnimationFrame(previewFrame);
     if (now - pv.last < 33 || !pv.o) return;
     pv.last = now;
-    for (var i = 0; i < 4; i++) pv.vb[i] += (pv.target[i] - pv.vb[i]) * 0.18;
-    var t = now / 1000, scale = $('preview').clientHeight / pv.vb[3];
+    for (var i = 0; i < 4; i++) pv.vb[i] += (pv.target[i] - pv.vb[i]) * (BF.motion.reduced() ? 1 : 0.18);
+    var still = BF.motion.reduced();
+    var t = still ? 0 : now / 1000, scale = $('preview').clientHeight / pv.vb[3];
     var inner = BF.Person.render(pv.o, S.previewAge, {
-      sw: 2.6 / scale, blink: (t % 4.1) < 0.12, yaw: Math.sin(t * 0.8) * 0.4, breathe: (Math.sin(t * 2) + 1) / 2, mood: 'happy'
+      sw: 2.6 / scale, blink: !still && (t % 4.7) > 4.55, yaw: Math.sin(t * 0.8) * 0.25,
+      breathe: still ? 0 : Math.sin(t * 1.8), phase: still ? undefined : t, mood: 'happy'
     });
     var svg = $('preview');
     svg.setAttribute('viewBox', pv.vb.map(function (n) { return n.toFixed(2); }).join(' '));
