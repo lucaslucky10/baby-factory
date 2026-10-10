@@ -124,11 +124,9 @@ var BF = window.BF || (window.BF = {});
       clearTimeout(autoPlayTimer);
       var a = +this.value;
       player.stop();
-      player.show(a, performance.now());
+      var shownScene = player.show(a, performance.now());
       $('v-age').textContent = Math.floor(a);
-      var last = b.scenes[0];
-      b.scenes.forEach(function (sc) { if (sc.age <= a + 0.25) last = sc; });
-      caption(last);
+      caption(shownScene || b.scenes[0]);
       $('v-play').textContent = '처음부터 재생';
     });
     // 자동 재생은 화면에 보일 때 한 번
