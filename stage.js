@@ -25,7 +25,7 @@ var BF = window.BF || (window.BF = {});
     var my = gy * 0.12;
     s += ln(fx, 0, fx, my) + ln(fx - 90, my, fx + 90, my);
     [[-90, '#FFD23F'], [0, '#8EC9F0'], [90, '#FF6F91']].forEach(function (m) { s += ln(fx + m[0], my, fx + m[0], my + 50, 2) + '<circle cx="' + f(fx + m[0]) + '" cy="' + f(my + 66) + '" r="16" fill="' + m[1] + '"' + st + '/>'; });
-    var cx0 = fx + 160, cw = 300, ch = 160;
+    var cx0 = fx + 240, cw = 300, ch = 160;
     s += rect(cx0, gy - ch, cw, ch * 0.75, 'none', st);
     for (i = 1; i < 8; i++) s += ln(cx0 + cw * i / 8, gy - ch, cx0 + cw * i / 8, gy - ch * 0.25);
     s += rect(cx0 - 8, gy - ch - 10, 16, ch + 10, '#FFFFFF', st + ' rx="6"') + rect(cx0 + cw - 8, gy - ch - 10, 16, ch + 10, '#FFFFFF', st + ' rx="6"');
@@ -42,7 +42,7 @@ var BF = window.BF || (window.BF = {});
     s += '<text x="' + f(bx + 30) + '" y="' + f(bt + 168) + '" ' + mono + ' font-size="26" fill="#F4F1DE" opacity="0.6">1 + 1 = 2</text>';
     var ckx = fx - 270, cky = gy * 0.17;
     s += '<circle cx="' + f(ckx) + '" cy="' + f(cky) + '" r="46" fill="#FFFFFF"' + st + '/>' + ln(ckx, cky, ckx, cky - 30, 4) + ln(ckx, cky, ckx + 22, cky + 8, 4);
-    var dx = fx + 175;
+    var dx = fx + 240;
     s += rect(dx, gy - 120, 170, 22, '#D8B07A', st + ' rx="4"') + rect(dx + 14, gy - 98, 14, 98, '#9AA5B8', st) + rect(dx + 142, gy - 98, 14, 98, '#9AA5B8', st);
     s += rect(0, gy, W, H - gy, '#C7D5DE') + '<g stroke="#B3C3CE" stroke-width="3">';
     for (i = 0; i < 24; i++) s += '<line x1="' + (i * 90) + '" y1="' + gy + '" x2="' + (i * 90) + '" y2="' + H + '"/>';
@@ -67,7 +67,7 @@ var BF = window.BF || (window.BF = {});
     [[-180, 0.14, 120, 90, '#FFD23F'], [-40, 0.1, 90, 120, '#8EC9F0'], [90, 0.16, 110, 80, '#FF6F91']].forEach(function (p) {
       s += rect(fx + p[0], gy * p[1], p[2], p[3], '#FFFDF5', st + ' rx="4"') + rect(fx + p[0] + 12, gy * p[1] + 12, p[2] - 24, p[3] - 24, p[4], ' opacity="0.8"');
     });
-    var sx = fx + 150;
+    var sx = fx + 250;
     s += rect(sx, gy - 150, 300, 110, '#7FB7A4', st + ' rx="34"') + rect(sx - 20, gy - 110, 340, 70, '#6AA592', st + ' rx="24"');
     var px = fx - 260;
     s += '<path d="M' + f(px - 34) + ' ' + f(gy) + 'l8-70h52l8 70z" fill="#D9825B"' + st + '/>';
@@ -86,7 +86,7 @@ var BF = window.BF || (window.BF = {});
       s += '<rect x="' + f(tx - 12 * sc) + '" y="' + f(gy - 170 * sc) + '" width="' + f(24 * sc) + '" height="' + f(170 * sc) + '" fill="#9C6B43"' + st + '/>';
       s += '<circle cx="' + f(tx) + '" cy="' + f(gy - 200 * sc) + '" r="' + f(80 * sc) + '" fill="#7CC47F"' + st + '/>';
     });
-    var bnx = fx + 130;
+    var bnx = fx + 240;
     s += rect(bnx, gy - 90, 240, 20, '#B5835A', st + ' rx="6"') + rect(bnx, gy - 130, 240, 18, '#B5835A', st + ' rx="6"') + rect(bnx + 20, gy - 70, 14, 70, '#59647A', st) + rect(bnx + 206, gy - 70, 14, 70, '#59647A', st);
     s += '<path d="M' + f(fx - 230) + ' 140q14-12 28 0q14-12 28 0" fill="none" stroke="' + INK + '" stroke-width="3"/><path d="M' + f(fx - 160) + ' 100q10-9 20 0q10-9 20 0" fill="none" stroke="' + INK + '" stroke-width="3"/>';
     s += rect(0, gy, W, H - gy, '#A9D49F') + '</g>';
@@ -108,27 +108,32 @@ var BF = window.BF || (window.BF = {});
     if (!scene) return { action: 'idle', expression: 'smile', prop: null, mood: 'happy' };
     var text = scene.items.map(function (it) { return it.text; }).join(' ');
     var prop = scene.prop, action = 'idle', expression = 'smile';
+    var propItem = scene.items.filter(function (it) { return it.prop === prop; })[0];
+    var propText = propItem ? propItem.text : text;
+    var wedding = prop === 'mic' && /결혼식.*사회/.test(propText);
     if (scene.final) { action = 'welcome'; expression = 'gentle'; }
-    else if (/무사히 치료|완주|금상|1등|수상/.test(text) && scene.mood !== 'soft') { action = prop === 'medal' ? 'run' : 'celebrate'; expression = 'delighted'; }
     else if (scene.mood === 'soft') {
       action = /알게 됐|확신|고민|기억/.test(text) ? 'think' : 'idle';
       expression = /무사히|가족|곁에서/.test(text) ? 'gentle' : action === 'think' ? 'thoughtful' : 'concerned';
       prop = null;
     }
-    else if (/휠체어.*(공원|코스|경주|릴레이)|무장애 숲길/.test(text)) { action = 'roll'; expression = /경주|릴레이|코스/.test(text) ? 'focused' : 'smile'; }
+    else if (/첫돌/.test(propText)) { action = 'idle'; expression = 'delighted'; }
     else if (prop === 'baby') { action = 'cradle'; expression = 'gentle'; }
     else if (prop === 'book' || prop === 'pencil') { action = 'read'; expression = 'focused'; }
+    else if (wedding) { action = 'speak'; expression = 'smile'; }
     else if (prop === 'mic' || prop === 'note') { action = 'perform'; expression = 'singing'; }
+    else if ((!prop || prop === 'medal') && /휠체어.*(공원|코스|경주|릴레이)|무장애 숲길/.test(text)) { action = 'roll'; expression = /경주|릴레이|코스/.test(text) ? 'focused' : 'smile'; }
     else if (prop === 'medal') { action = 'run'; expression = 'focused'; }
     else if (prop === 'trophy' || prop === 'gradcap') { action = 'celebrate'; expression = 'delighted'; }
     else if (prop === 'bouquet') { action = 'welcome'; expression = 'shy'; }
     else if (prop === 'backpack' || prop === 'briefcase') { action = 'wave'; expression = 'smile'; }
     else if (prop === 'ball') { action = 'cheer'; expression = 'delighted'; }
+    else if (/무사히 치료|완주|금상|1등|수상/.test(text)) { action = 'celebrate'; expression = 'delighted'; }
     else if (/사랑하는|결혼|함께 살/.test(text)) { action = 'welcome'; expression = 'shy'; }
     else if (/어려|막혔|실패|다쳤|통증|여드름|흐려/.test(text)) { action = 'think'; expression = 'thoughtful'; }
     else if (/친구|수다|선물|생일|입학/.test(text)) { action = 'wave'; expression = 'smile'; }
     else if (/산책|운동|달리기/.test(text)) { action = 'run'; expression = 'smile'; }
-    return { action: action, expression: expression, prop: prop, mood: scene.mood };
+    return { action: action, expression: expression, prop: prop, mood: scene.mood, outfit: wedding && scene.mood !== 'soft' ? 'suit' : undefined };
   }
   function Player(svg, opt) {
     this.svg = svg;
@@ -187,10 +192,11 @@ var BF = window.BF || (window.BF = {});
     var blink = !still && (tt % 4.7) > 4.55;
     var yaw = Math.sin(tt * 0.85) * 0.25;
     var breathe = still ? 0 : Math.sin(tt * 1.8);
-    var bounce = !still && holding && seg.scene.mood === 'happy' ? Math.sin(U.clamp((this.t - seg.t0) / 0.8, 0, 1) * Math.PI) * 3 : 0;
+    var support = BF.Person.look(o, age, {});
+    var bounce = !still && !support.wheelchair && !support.cane && holding && acting.action === 'celebrate' ? Math.sin(U.clamp((this.t - seg.t0) / 0.8, 0, 1) * Math.PI) * 3 : 0;
     var inner = BF.Person.render(o, age, {
       sw: 3 / s, blink: blink, yaw: yaw, breathe: breathe, phase: still ? undefined : tt,
-      mood: acting.mood, expression: acting.expression, action: acting.action, prop: acting.prop,
+      mood: acting.mood, expression: acting.expression, action: acting.action, prop: acting.prop, outfit: acting.outfit,
       poseMix: !holding || still ? 1 : U.smooth(0, 0.5, this.t - seg.t0) * (seg.t1 == null ? 1 : 1 - U.smooth(seg.t1 - 0.35, seg.t1, this.t))
     });
     this.figEl.innerHTML = '<g transform="translate(' + f(this.fx) + ' ' + f(this.gy - bounce) + ') scale(' + f(s) + ')">' + inner + '</g>';
@@ -284,8 +290,9 @@ var BF = window.BF || (window.BF = {});
     var sc = null;
     this.fxEl.innerHTML = '';
     this.cam = null;
-    for (var i = 0; i < this.scenes.length; i++) if (Math.abs(this.scenes[i].age - age) < 0.01) sc = this.scenes[i];
+    for (var i = 0; i < this.scenes.length; i++) if (this.scenes[i].age <= age) sc = this.scenes[i];
     this.draw(age, now || 0, sc ? { type: 'hold', scene: sc, t0: -10, idx: 1 } : null);
+    return sc;
   };
 
   BF.Stage = { Player: Player, backdrops: backdrops, performanceFor: performanceFor };

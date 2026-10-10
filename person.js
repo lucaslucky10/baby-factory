@@ -58,6 +58,14 @@ var BF = window.BF || (window.BF = {});
     return '<g transform="translate(' + f(x) + ' ' + f(y) + ') rotate(' + f(angle) + ')">' + path(d, skin, sw * .45) + (open ? stroke('M0 ' + f(w * .75) + 'v' + f(w * .22), U.mix(skin, INK, .25), sw * .4) : '') + '</g>';
   }
 
+  // 손잡이를 쥔 손은 손목 회전에 따라 물건 위로 뒤집히지 않습니다.
+  // 작은 손가락만 앞에 그려 마이크 헤드와 물건의 주요 모양을 남깁니다.
+  function grip(x, y, sc, skin, sw) {
+    return '<g class="prop-grip" data-x="' + f(x) + '" data-y="' + f(y) + '">' +
+      ellipse(x, y, sc * .28, sc * .23, skin, sw * .45) +
+      stroke('M' + f(x - sc * .12) + ' ' + f(y + sc * .04) + 'h' + f(sc * .25), U.mix(skin, INK, .3), sw * .35) + '</g>';
+  }
+
   var HH = [[0, 23], [1, 27], [3, 30], [7, 33], [12, 36], [16, 38], [18, 39]];
   var TORSO = [[0, 0.65], [1, 0.85], [3, 1.05], [7, 1.25], [12, 1.40], [18, 1.48]];
   var NECK = [[0, 0.02], [3, 0.055], [10, 0.09], [18, 0.12]];
@@ -427,7 +435,7 @@ var BF = window.BF || (window.BF = {});
   // ---------------- 손에 든 물건 ----------------
   // 각 소품의 실제 도형 경계(소품 배율 기준). 손과 소품을 함께 옮길 때 사용합니다.
   var PROP_BOUNDS = {
-    ball: [-.75, -.2, .75, 1.3], book: [-1.1, -.35, 1.1, 1.28],
+    ball: [-.75, -1.3, .75, .2], book: [-1.1, -.35, 1.1, 1.28],
     pencil: [-.25, -1.6, .25, 1.2], mic: [-.45, -1.7, .45, .1],
     stetho: [-.6, -.8, .6, 1.2], mouse: [-.5, -.3, .5, 1.1],
     gavel: [-.4, -1.3, .9, .6], thread: [-.5, -.5, .5, .6],
@@ -439,21 +447,21 @@ var BF = window.BF || (window.BF = {});
     var s = '';
     switch (kind) {
       case 'backpack': break;
-      case 'ball': s += circle(x, y + sc * 0.55, sc * 0.75, '#F25C54', sw) + stroke('M' + f(x - sc * 0.75) + ' ' + f(y + sc * 0.55) + 'q' + f(sc * 0.75) + ' ' + f(sc * 0.5) + ' ' + f(sc * 1.5) + ' 0', '#FFFFFF', sw * 1.2); break;
+      case 'ball': s += circle(x, y - sc * 0.55, sc * 0.75, '#F25C54', sw) + stroke('M' + f(x - sc * 0.75) + ' ' + f(y - sc * 0.55) + 'q' + f(sc * 0.75) + ' ' + f(sc * 0.5) + ' ' + f(sc * 1.5) + ' 0', '#FFFFFF', sw * 1.2); break;
       case 'book':
         s += path('M' + f(x) + ' ' + f(y) + 'q' + f(-sc * .6) + ' ' + f(-sc * .35) + ' ' + f(-sc * 1.1) + ' ' + f(-sc * .15) + 'v' + f(sc * 1.25) + 'q' + f(sc * .65) + ' ' + f(-sc * .12) + ' ' + f(sc * 1.1) + ' ' + f(sc * .18) + 'q' + f(sc * .45) + ' ' + f(-sc * .30) + ' ' + f(sc * 1.1) + ' ' + f(-sc * .18) + 'v' + f(-sc * 1.25) + 'q' + f(-sc * .5) + ' ' + f(-sc * .2) + ' ' + f(-sc * 1.1) + ' ' + f(sc * .15) + 'Z', '#FAF5E5', sw);
         s += line(x, y, x, y + sc * 1.28, '#4F7CAC', sw);
         for (var page = -1; page <= 1; page += 2) for (var row = 0; row < 3; row++) s += line(x + page * sc * .22, y + sc * (.22 + row * .23), x + page * sc * .88, y + sc * (.12 + row * .23), '#B3BAC0', sw * .55);
         break;
       case 'pencil': s += path('M' + f(x - sc * 0.25) + ' ' + f(y - sc * 1.6) + 'h' + f(sc * 0.5) + 'v' + f(sc * 2.2) + 'l' + f(-sc * 0.25) + ' ' + f(sc * 0.6) + 'l' + f(-sc * 0.25) + ' ' + f(-sc * 0.6) + 'Z', '#FFCF5C', sw); break;
-      case 'mic': s += line(x, y + sc * 0.1, x, y - sc * 1.0, INK, sc * 0.4) + circle(x, y - sc * 1.25, sc * 0.45, '#9AA5B8', sw); break;
+      case 'mic': s += line(x, y + sc * 0.1, x, y - sc * 1.0, INK, sc * 0.4) + circle(x, y - sc * 1.25, sc * 0.45, '#9AA5B8', sw, ' class="prop-feature"'); break;
       case 'stetho': s += stroke('M' + f(x - sc * 0.4) + ' ' + f(y - sc * 0.8) + 'q' + f(-sc * 0.2) + ' ' + f(sc * 1.4) + ' ' + f(sc * 0.4) + ' ' + f(sc * 1.4) + 'q' + f(sc * 0.6) + ' 0 ' + f(sc * 0.4) + ' ' + f(-sc * 1.4), '#5C677D', sw * 1.4) + circle(x, y + sc * 0.9, sc * 0.3, '#C6CDD8', sw); break;
       case 'mouse': s += ellipse(x, y + sc * 0.4, sc * 0.5, sc * 0.7, '#E5E8EE', sw) + line(x, y - sc * 0.25, x, y + sc * 0.1, INK, sw); break;
       case 'gavel': s += line(x, y + sc * 0.6, x + sc * 0.3, y - sc * 0.8, '#8B5E3C', sc * 0.25) + path('M' + f(x - sc * 0.4) + ' ' + f(y - sc * 1.3) + 'h' + f(sc * 1.3) + 'v' + f(sc * 0.6) + 'h' + f(-sc * 1.3) + 'Z', '#A47148', sw); break;
       case 'thread': s += path('M' + f(x - sc * 0.5) + ' ' + f(y - sc * 0.5) + 'h' + f(sc) + 'v' + f(sc * 1.1) + 'h' + f(-sc) + 'Z', '#F2E9E4', sw) + line(x - sc * 0.5, y - sc * 0.1, x + sc * 0.5, y - sc * 0.1, '#E84855', sw * 1.3) + line(x - sc * 0.5, y + sc * 0.25, x + sc * 0.5, y + sc * 0.25, '#E84855', sw * 1.3); break;
       case 'money': s += path('M' + f(x - sc * 0.8) + ' ' + f(y - sc * 0.4) + 'h' + f(sc * 1.6) + 'v' + f(sc * 0.9) + 'h' + f(-sc * 1.6) + 'Z', '#9ED39B', sw) + circle(x, y + sc * 0.05, sc * 0.22, '#5E9C5B', 0); break;
       case 'briefcase': s += path('M' + f(x - sc * 0.9) + ' ' + f(y + sc * 0.2) + 'h' + f(sc * 1.8) + 'v' + f(sc * 1.2) + 'h' + f(-sc * 1.8) + 'Z', '#8B5E3C', sw) + stroke('M' + f(x - sc * 0.35) + ' ' + f(y + sc * 0.2) + 'v' + f(-sc * 0.3) + 'h' + f(sc * 0.7) + 'v' + f(sc * 0.3), INK, sw); break;
-      case 'trophy': s += path('M' + f(x - sc * 0.7) + ' ' + f(y - sc * 1.6) + 'h' + f(sc * 1.4) + 'q0 ' + f(sc * 1.1) + ' ' + f(-sc * 0.7) + ' ' + f(sc * 1.1) + 'q' + f(-sc * 0.7) + ' 0 ' + f(-sc * 0.7) + ' ' + f(-sc * 1.1) + 'Z', '#FFC93C', sw) + path('M' + f(x - sc * 0.45) + ' ' + f(y - sc * 0.1) + 'h' + f(sc * 0.9) + 'v' + f(sc * 0.35) + 'h' + f(-sc * 0.9) + 'Z', '#C98B1E', sw); break;
+      case 'trophy': s += line(x, y - sc * .6, x, y + sc * .1, '#C98B1E', sc * .18) + path('M' + f(x - sc * 0.7) + ' ' + f(y - sc * 1.6) + 'h' + f(sc * 1.4) + 'q0 ' + f(sc * 1.1) + ' ' + f(-sc * 0.7) + ' ' + f(sc * 1.1) + 'q' + f(-sc * 0.7) + ' 0 ' + f(-sc * 0.7) + ' ' + f(-sc * 1.1) + 'Z', '#FFC93C', sw) + path('M' + f(x - sc * 0.45) + ' ' + f(y - sc * 0.1) + 'h' + f(sc * 0.9) + 'v' + f(sc * 0.35) + 'h' + f(-sc * 0.9) + 'Z', '#C98B1E', sw); break;
       case 'bouquet': s += path('M' + f(x - sc * 0.35) + ' ' + f(y - sc * 0.2) + 'L' + f(x) + ' ' + f(y + sc * 1.2) + 'L' + f(x + sc * 0.35) + ' ' + f(y - sc * 0.2) + 'Z', '#7FDCA6', sw) +
         circle(x - sc * 0.45, y - sc * 0.55, sc * 0.4, '#FF8FAB', sw) + circle(x + sc * 0.45, y - sc * 0.55, sc * 0.4, '#FFCF5C', sw) + circle(x, y - sc * 0.95, sc * 0.42, '#F25C54', sw); break;
       case 'baby': s += ellipse(x, y + sc * 0.3, sc * 1.1, sc * 0.75, '#FFE3EC', sw) + circle(x - sc * 0.65, y - sc * 0.1, sc * 0.55, '#F8DDC8', sw) + stroke('M' + f(x - sc * 0.85) + ' ' + f(y - sc * 0.1) + 'q' + f(sc * 0.12) + ' ' + f(sc * 0.12) + ' ' + f(sc * 0.24) + ' 0', INK, sw * 0.8); break;
@@ -482,10 +490,11 @@ var BF = window.BF || (window.BF = {});
     var hunchDrop = L.hunch * hh * 0.12;
     chinY = shoulderY - L.neck + hunchDrop;
     cy = chinY - b;
-    var breathe = opts.breathe || 0;
+    var breathe = seated ? 0 : opts.breathe || 0;
     var phase = opts.phase || 0;
     var action = opts.action || (opts.wave ? 'wave' : 'idle');
     if ((seated || L.cane) && action === 'run') action = 'cheer';
+    if (action === 'roll' && (!seated || PROP_BOUNDS[opts.prop])) action = 'cheer';
     var move = opts.phase == null ? 0 : Math.sin(phase * (action === 'run' ? 5 : 2));
     var pose = opts.poseMix == null ? 1 : U.clamp(opts.poseMix, 0, 1);
     var col = outfitColors(L, pal);
@@ -518,7 +527,7 @@ var BF = window.BF || (window.BF = {});
       }
       // 긴 뒷머리 (몸 뒤)
       var hairS = hairShapes(L, 0, cy, a, b, L.hairColor, sw);
-      out += drawShapes(hairS.back, L.hairColor, sw);
+      out += '<g class="person-back-hair">' + drawShapes(hairS.back, L.hairColor, sw) + '</g>';
       // 책가방 (뒤)
       if (opts.prop === 'backpack') out += path('M' + f(-sw2 * 1.15) + ' ' + f(shoulderY + L.torso * 0.12) + 'h' + f(sw2 * 2.3) + 'v' + f(L.torso * 0.85) + 'q0 ' + f(hh * 0.1) + ' ' + f(-hh * 0.1) + ' ' + f(hh * 0.1) + 'h' + f(-sw2 * 2.3 + hh * 0.2) + 'q' + f(-hh * 0.1) + ' 0 ' + f(-hh * 0.1) + ' ' + f(-hh * 0.1) + 'Z', '#F25C54', sw);
 
@@ -683,21 +692,28 @@ var BF = window.BF || (window.BF = {});
       var propSide = L.cane ? -1 : 1;
       var heldBounds = PROP_BOUNDS[opts.prop];
       var centeredHeld = (action === 'read' && opts.prop === 'book') || (action === 'cradle' && opts.prop === 'baby');
+      var parkedCane = L.cane && centeredHeld;
       var propScale = hh * (opts.prop === 'baby' ? .36 : .23);
       [-1, 1].forEach(function (sd) {
         var start = [sd * (sw2 - L.armW * .38), tTop + hh * .18];
         var elbow = [sd * (sw2 + hh * .04), tTop + armLen * .55];
         var wrist = [sd * (hip2 + hh * .12), tTop + armLen];
+        if (seated) {
+          elbow = [sd * (sw2 + hh * .10), hipY - hh * .40];
+          wrist = [sd * (chair.halfWidth - hh * .10), hipY - hh * .27];
+        }
         var targetE = elbow.slice(), targetW = wrist.slice();
         var hold = sd === propSide && opts.prop && ['backpack', 'medal', 'gradcap', 'note'].indexOf(opts.prop) < 0;
         if (hold) { targetE = [sd * (sw2 + hh * .12), tTop + armLen * .58]; targetW = [sd * (sw2 + hh * .14), tTop + armLen * .43]; }
         if (centeredHeld) {
           targetE = [sd * (sw2 + hh * .04), tTop + armLen * .68];
           targetW = [sd * propScale * .98, tTop + armLen * (action === 'read' ? .47 : .63) + sd * hh * .025];
+          if (action === 'cradle') targetW = [sd * propScale * .82, tTop + armLen * .63 + propScale * .45];
         } else if (action === 'think' && sd === -1) {
           targetE = [-sw2 - hh * .02, tTop + armLen * .48]; targetW = [-a * .22, chinY + hh * .04];
-        } else if (action === 'perform' && sd === propSide) {
-          targetE = [sd * (sw2 + hh * .28), tTop + armLen * .50]; targetW = [sd * (sw2 + hh * .25), chinY + hh * .20 + move * hh * .025];
+        } else if ((action === 'perform' || action === 'speak') && sd === propSide) {
+          targetE = [sd * (sw2 + hh * .28), tTop + armLen * .50];
+          targetW = [sd * (sw2 + hh * .25), chinY + hh * (action === 'speak' ? .30 : .20) + move * hh * .018];
         } else if ((action === 'celebrate' || action === 'cheer' || action === 'wave') && (sd === -1 || action !== 'wave')) {
           targetE = [sd * (sw2 + hh * .36), tTop + hh * .12];
           targetW = [sd * (sw2 + hh * (.32 + move * .09)), tTop - hh * .42];
@@ -708,13 +724,14 @@ var BF = window.BF || (window.BF = {});
           targetE = [sd * (sw2 + hh * .25), tTop + armLen * .52]; targetW = [sd * (sw2 + hh * .46), tTop + armLen * .35];
         }
         // 보행 보조기기를 든 손은 안전하게 유지합니다.
-        if (sd === 1 && L.cane) { targetE = [sw2 + hh * .08, tTop + armLen * .55]; targetW = [sw2 + hh * .24, tTop + armLen * .80]; }
+        if (sd === 1 && L.cane && !parkedCane) { targetE = [sw2 + hh * .08, tTop + armLen * .55]; targetW = [sw2 + hh * .24, tTop + armLen * .80]; }
         if (seated && action === 'idle' && !hold) { targetE = [sd * (sw2 + hh * .10), hipY - hh * .40]; targetW = [sd * (chair.halfWidth - hh * .10), hipY - hh * .27]; }
         if (seated && action === 'roll') {
           targetE = [sd * (sw2 + hh * .20), tTop + armLen * .65];
-          targetW = [sd * (chair.halfWidth + chair.radius * .15), -chair.radius * 1.70 + move * hh * .06];
+          var pushAngle = -Math.PI / 2 + .62 + move * .28;
+          targetW = [sd * (chair.halfWidth + chair.radius * .16 + Math.cos(pushAngle) * chair.radius * .48 * .89), -chair.radius + Math.sin(pushAngle) * chair.radius * .92];
         }
-        var armPose = centeredHeld ? 1 : pose;
+        var armPose = centeredHeld || (sd === 1 && L.cane && !parkedCane) ? 1 : pose;
         elbow = elbow.map(function (v, i) { return U.lerp(v, targetE[i], armPose); });
         wrist = wrist.map(function (v, i) { return U.lerp(v, targetW[i], armPose); });
         if (heldBounds && !centeredHeld && sd === propSide) {
@@ -725,6 +742,7 @@ var BF = window.BF || (window.BF = {});
           wrist[0] = sd * Math.max(Math.abs(wrist[0]), edge + innerExtent + hh * .08);
         }
         var shortSleeve = L.outfit === 'kid' && L.age >= 3;
+        out += '<g class="person-arm" data-side="' + sd + '" data-wrist-x="' + f(wrist[0]) + '" data-wrist-y="' + f(wrist[1]) + '">';
         out += ribbon(start, elbow, wrist, L.armW * .95, L.armW * .82, L.armW * .60, shortSleeve ? L.skin : col.sleeve, sw * .35);
         if (shortSleeve) {
           var cuff = [U.lerp(start[0], elbow[0], .65), U.lerp(start[1], elbow[1], .65)];
@@ -732,12 +750,14 @@ var BF = window.BF || (window.BF = {});
         }
         var angle = Math.atan2(wrist[1] - elbow[1], wrist[0] - elbow[0]) * 180 / Math.PI - 90;
         var palm = hand(wrist[0], wrist[1], angle, L.armW * .72, L.skin, sw, action === 'wave' || action === 'welcome');
-        if (heldBounds && (centeredHeld || sd === propSide)) gripHands += palm;
+        if (heldBounds && (centeredHeld || sd === propSide)) gripHands += grip(wrist[0], wrist[1], propScale, L.skin, sw);
         else out += palm;
+        out += '</g>';
         hands[sd] = wrist;
       });
 
       // 지팡이
+      if (parkedCane) hands[1] = [sw2 + hh * .24, tTop + armLen * .80];
       if (L.cane === 'white') {
         var hx1 = hands[1][0], hy1 = hands[1][1];
         out += line(hx1, hy1, hx1 + hh * 0.75, -0.5, INK, sw * 2.6) + line(hx1, hy1, hx1 + hh * 0.75, -0.5, '#FFFFFF', sw * 1.3);
@@ -751,8 +771,8 @@ var BF = window.BF || (window.BF = {});
       // 손에 든 물건
       if (heldBounds && hands[propSide]) {
         var held = hands[propSide];
-        var propX = centeredHeld ? (hands[-1][0] + hands[1][0]) / 2 : held[0];
-        var propY = centeredHeld ? (hands[-1][1] + hands[1][1]) / 2 - propScale * (action === 'read' ? .55 : .25) : held[1];
+        var propX = centeredHeld ? 0 : held[0];
+        var propY = centeredHeld ? tTop + armLen * (action === 'read' ? .47 : .63) - propScale * (action === 'read' ? .55 : .25) : held[1];
         foreground = '<g class="held-prop" data-prop="' + opts.prop + '">' + propSVG(opts.prop, propX, propY, propScale, sw * .8) + '</g>';
       }
     }
@@ -820,7 +840,7 @@ var BF = window.BF || (window.BF = {});
     if (L.cane) sideCm = Math.max(sideCm, L.shoulderW / 2 + L.hh * 1.08);
     var scale = Math.min((h * 0.9) / topCm, w * .9 / (sideCm * 2));
     var sw = (opts.px || 2.2) / scale;
-    var inner = render(o, age, { sw: sw, mood: opts.mood || 'happy', closedMouth: opts.closedMouth, prop: opts.prop, action: opts.action, expression: opts.expression, phase: opts.phase, poseMix: opts.poseMix, yaw: 0 });
+    var inner = render(o, age, { sw: sw, mood: opts.mood || 'happy', closedMouth: opts.closedMouth, prop: opts.prop, action: opts.action, expression: opts.expression, phase: opts.phase, poseMix: opts.poseMix, outfit: opts.outfit, yaw: 0 });
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '">' +
       (opts.bg ? '<rect width="' + w + '" height="' + h + '" fill="' + opts.bg + '"/>' : '') +
       '<g transform="translate(' + f(w / 2) + ' ' + f(h * 0.95) + ') scale(' + f(scale) + ')">' + inner + '</g></svg>';

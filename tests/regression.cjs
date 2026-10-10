@@ -71,6 +71,8 @@ for (let seed = 0; seed < 12; seed++) {
 const performances = [
   ['책 읽는 시간', 'book', 'happy', 'read', 'focused'],
   ['첫 무대에서 노래했어요', 'mic', 'happy', 'perform', 'singing'],
+  ['친구 결혼식 사회만 열한 번 봤어요.', 'mic', 'happy', 'speak', 'smile'],
+  ['첫돌. 돌잡이에서 마이크를 잡았어요.', 'mic', 'happy', 'idle', 'delighted'],
   ['금상을 수상했어요', 'trophy', 'happy', 'celebrate', 'delighted'],
   ['매일 달리기를 했어요', 'medal', 'happy', 'run', 'focused'],
   ['아기를 품에 안았어요', 'baby', 'happy', 'cradle', 'gentle'],
@@ -87,7 +89,7 @@ for (const [text, prop, mood, action, expression] of performances) {
   if (mood === 'soft') assert.equal(acting.prop, null, 'no celebratory prop during difficult scenes');
 }
 const model = { ...BF.sim.build(record(42)).o, has: {} };
-const actions = ['idle', 'read', 'perform', 'celebrate', 'run', 'cradle', 'think', 'wave', 'welcome', 'cheer', 'roll'];
+const actions = ['idle', 'read', 'perform', 'speak', 'celebrate', 'run', 'cradle', 'think', 'wave', 'welcome', 'cheer', 'roll'];
 let poseRenderCount = 0;
 for (const sex of ['M', 'F', 'N']) for (const age of ages) for (const action of actions) for (const phase of [0, .3, 1.2]) {
   for (const has of [{}, { smn1: true }, { rpe65: true }]) {
@@ -142,6 +144,25 @@ staticPlayer.draw(71, 3000, rollingSegment); assert.equal(staticPlayer.figEl.inn
 assert(staticPlayer.rulerEl.innerHTML.includes('현재 앉은 모습'));
 assert(!staticPlayer.rulerEl.innerHTML.includes('stroke-dasharray'), 'do not mark standing height at the seated head');
 BF.motion.reduced = motionOriginal;
+// A ball remains held during merged basketball/race events; wheel propulsion
+// must not take over both hands. Wedding hosting uses a formal speaking pose.
+const mergedSports = { items: [{ text: '휠체어 농구팀에 들어갔어요.', prop: 'ball' }, { text: '도전 코스를 완주했어요.', prop: 'medal' }], prop: 'ball', mood: 'happy' };
+assert.equal(BF.Stage.performanceFor(mergedSports).action, 'cheer');
+assert.equal(BF.Stage.performanceFor({ items: [{text: '친구 결혼식 사회를 봤어요.', prop:'mic'}], prop:'mic', mood:'happy' }).outfit, 'suit');
+// No event bounce may lift either assistive device from the ground.
+BF.motion.reduced = () => false;
+for (const has of [{smn1:true},{rpe65:true}]) {
+  const p = new BF.Stage.Player({}, {W:1000,H:900,groundY:800,figureX:500,rulerX:100});
+  Object.assign(p,{o:{...model,has},figEl:{},rulerEl:{},bdEls:[],t:.4});
+  p.draw(36,400,{type:'hold',t0:0,t1:4,scene:{items:[{text:'수상했어요'}],prop:'trophy',mood:'happy'}});
+  assert(p.figEl.innerHTML.startsWith('<g transform="translate(500 800)'), 'mobility support stays grounded');
+}
+BF.motion.reduced = motionOriginal;
+// Scrubbing between exact story ages must retain the caption's own pose.
+const scrubPlayer = new BF.Stage.Player({}, {W:1000,H:900,groundY:800,figureX:500,rulerX:100});
+const weddingScene={age:36,items:[{text:'결혼식 사회',prop:'mic'}],prop:'mic',mood:'happy'};
+Object.assign(scrubPlayer,{scenes:[{age:34},weddingScene,{age:45}],fxEl:{},draw(age,now,seg){this.shown=seg.scene;}});
+assert.equal(scrubPlayer.show(36.5),weddingScene);assert.equal(scrubPlayer.shown,weddingScene);
 // Every age, including paused transition boundaries, has one fully opaque background.
 const backgroundPlayer = new BF.Stage.Player({}, { W: 1000, H: 900, groundY: 800, figureX: 500, rulerX: 100 });
 const backgrounds = Array.from({length: 5}, () => ({ attrs: {}, setAttribute(k,v) { this.attrs[k] = v; } }));
@@ -156,6 +177,15 @@ for (const age of boundaryAges) for (const reduced of [false, true]) {
 }
 BF.motion.reduced = motionOriginal;
 const heldKinds = ['ball','book','pencil','mic','stetho','mouse','gavel','thread','money','briefcase','trophy','bouquet','baby'];
+for (const age of [4,21,71,95]) for (const phase of [0,.7,2.3]) {
+  const o={...model,has:{smn1:true}},L=BF.Person.look(o,age,{}),c=BF.Person.chairGeometry(L);
+  const svg=BF.Person.render(o,age,{action:'roll',phase,poseMix:1});
+  for (const match of svg.matchAll(/class="person-arm" data-side="(-?1)" data-wrist-x="([^"]+)" data-wrist-y="([^"]+)"/g)) {
+    const x=Math.abs(+match[2]),y=+match[3];
+    const ellipse=Math.pow((x-c.halfWidth-c.radius*.16)/(c.radius*.48*.89),2)+Math.pow((y+c.radius)/(c.radius*.92),2);
+    assert(Math.abs(ellipse-1)<.006,'pushing wrist stays on the wheelchair handrim');
+  }
+}
 for (const prop of heldKinds) {
   const svg = BF.Person.render(model, 23, { prop, action: prop === 'mic' ? 'perform' : 'celebrate', phase: .7 });
   assert(svg.indexOf('class="held-prop"') > svg.indexOf('class="person-head"'), prop + ' must be above the head layer');
