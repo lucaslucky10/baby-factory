@@ -96,10 +96,10 @@ var BF = window.BF || (window.BF = {});
   }
   var SCENE_AGES = [[0, 5.5], [5.5, 18.5], [18.5, 29.5], [29.5, 61.5], [61.5, 200]];
   function sceneOpacity(i, age) {
-    var r = SCENE_AGES[i], fade = 1.2;
-    var inA = i === 0 ? 1 : U.smooth(r[0] - fade, r[0] + fade * 0.2, age);
-    var outA = i === SCENE_AGES.length - 1 ? 1 : 1 - U.smooth(r[1] - fade, r[1] + fade * 0.2, age);
-    return Math.max(0, Math.min(inA, outA));
+    // 나이가 머무는 동안 반투명 배경 두 장이 고정되는 일이 없도록
+    // 경계 전후에도 정확히 한 장만 완전히 표시합니다.
+    var r = SCENE_AGES[i];
+    return (i === 0 || age >= r[0]) && (i === SCENE_AGES.length - 1 || age < r[1]) ? 1 : 0;
   }
 
   // ---------------- 인생 재생기 ----------------
@@ -194,7 +194,11 @@ var BF = window.BF || (window.BF = {});
       poseMix: !holding || still ? 1 : U.smooth(0, 0.5, this.t - seg.t0) * (seg.t1 == null ? 1 : 1 - U.smooth(seg.t1 - 0.35, seg.t1, this.t))
     });
     this.figEl.innerHTML = '<g transform="translate(' + f(this.fx) + ' ' + f(this.gy - bounce) + ') scale(' + f(s) + ')">' + inner + '</g>';
-    for (var i = 0; i < this.bdEls.length; i++) this.bdEls[i].setAttribute('opacity', f(sceneOpacity(i, age)));
+    for (var i = 0; i < this.bdEls.length; i++) {
+      var visible = sceneOpacity(i, age);
+      this.bdEls[i].setAttribute('opacity', visible);
+      this.bdEls[i].setAttribute('display', visible ? 'inline' : 'none');
+    }
     // 키재기 자
     var H = BF.sim.heightAt(o, age);
     var r = '', x = this.rx, gy = this.gy;

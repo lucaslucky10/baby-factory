@@ -142,6 +142,25 @@ staticPlayer.draw(71, 3000, rollingSegment); assert.equal(staticPlayer.figEl.inn
 assert(staticPlayer.rulerEl.innerHTML.includes('현재 앉은 모습'));
 assert(!staticPlayer.rulerEl.innerHTML.includes('stroke-dasharray'), 'do not mark standing height at the seated head');
 BF.motion.reduced = motionOriginal;
+// Every age, including paused transition boundaries, has one fully opaque background.
+const backgroundPlayer = new BF.Stage.Player({}, { W: 1000, H: 900, groundY: 800, figureX: 500, rulerX: 100 });
+const backgrounds = Array.from({length: 5}, () => ({ attrs: {}, setAttribute(k,v) { this.attrs[k] = v; } }));
+Object.assign(backgroundPlayer, { o: model, figEl: {}, rulerEl: {}, bdEls: backgrounds, t: 2 });
+const boundaryAges = [0, 5.49, 5.5, 5.51, 18, 18.49, 18.5, 18.51, 19, 29.49, 29.5, 29.51, 61.49, 61.5, 61.51, 100];
+for (const age of boundaryAges) for (const reduced of [false, true]) {
+  BF.motion.reduced = () => reduced;
+  backgroundPlayer.draw(age, 700, segment);
+  assert.equal(backgrounds.filter(b => b.attrs.display !== 'none').length, 1);
+  assert.equal(backgrounds.filter(b => b.attrs.opacity === 1).length, 1);
+  assert(backgrounds.every(b => b.attrs.opacity === 0 || b.attrs.opacity === 1));
+}
+BF.motion.reduced = motionOriginal;
+const heldKinds = ['ball','book','pencil','mic','stetho','mouse','gavel','thread','money','briefcase','trophy','bouquet','baby'];
+for (const prop of heldKinds) {
+  const svg = BF.Person.render(model, 23, { prop, action: prop === 'mic' ? 'perform' : 'celebrate', phase: .7 });
+  assert(svg.indexOf('class="held-prop"') > svg.indexOf('class="person-head"'), prop + ' must be above the head layer');
+  assert.equal((svg.match(/class="held-prop"/g) || []).length, 1, 'one prop, no doubled image');
+}
 // Pausing must freeze all figure motion; reduced motion must suppress SVG particles.
 let frames = 0, pausedSvg = 0;
 const svg = { pauseAnimations() { pausedSvg++; }, unpauseAnimations() {} };

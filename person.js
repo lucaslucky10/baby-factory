@@ -425,6 +425,16 @@ var BF = window.BF || (window.BF = {});
   }
 
   // ---------------- 손에 든 물건 ----------------
+  // 각 소품의 실제 도형 경계(소품 배율 기준). 손과 소품을 함께 옮길 때 사용합니다.
+  var PROP_BOUNDS = {
+    ball: [-.75, -.2, .75, 1.3], book: [-1.1, -.35, 1.1, 1.28],
+    pencil: [-.25, -1.6, .25, 1.2], mic: [-.45, -1.7, .45, .1],
+    stetho: [-.6, -.8, .6, 1.2], mouse: [-.5, -.3, .5, 1.1],
+    gavel: [-.4, -1.3, .9, .6], thread: [-.5, -.5, .5, .6],
+    money: [-.8, -.4, .8, .5], briefcase: [-.9, -.1, .9, 1.4],
+    trophy: [-.7, -1.6, .7, .25], bouquet: [-.85, -1.37, .85, 1.2],
+    baby: [-1.2, -.65, 1.1, 1.05]
+  };
   function propSVG(kind, x, y, sc, sw) {
     var s = '';
     switch (kind) {
@@ -480,7 +490,7 @@ var BF = window.BF || (window.BF = {});
     var pose = opts.poseMix == null ? 1 : U.clamp(opts.poseMix, 0, 1);
     var col = outfitColors(L, pal);
     var sw2 = L.shoulderW / 2, hip2 = L.hipW / 2;
-    var out = '';
+    var out = '', foreground = '', gripHands = '';
 
     // 그림자
     out += ellipse(0, 0, Math.max(L.shoulderW, L.hipW) * (seated ? 1.1 : 0.75), hh * 0.12, 'rgba(81,70,63,0.10)', 0);
@@ -573,7 +583,7 @@ var BF = window.BF || (window.BF = {});
       }
       // 목
       out += path('M' + f(-a * 0.24) + ' ' + f(chinY - hh * 0.06) + 'h' + f(a * 0.48) + 'V' + f(tTop + hh * 0.06) + 'h' + f(-a * 0.48) + 'Z', U.mix(L.skin, '#C98F6E', 0.18), sw);
-      out += path(torsoPath(coatExt), col.top, sw);
+      out += path(torsoPath(coatExt), col.top, sw, ' class="person-torso"');
       // 옷 디테일
       var nk = tTop, cw = a * 0.42;
       switch (L.outfit) {
@@ -671,6 +681,9 @@ var BF = window.BF || (window.BF = {});
       // 어깨 → 팔꿈치 → 손목의 한 실루엣. 손은 손목 방향을 따라갑니다.
       var armLen = L.torso * .94, hands = {};
       var propSide = L.cane ? -1 : 1;
+      var heldBounds = PROP_BOUNDS[opts.prop];
+      var centeredHeld = (action === 'read' && opts.prop === 'book') || (action === 'cradle' && opts.prop === 'baby');
+      var propScale = hh * (opts.prop === 'baby' ? .36 : .23);
       [-1, 1].forEach(function (sd) {
         var start = [sd * (sw2 - L.armW * .38), tTop + hh * .18];
         var elbow = [sd * (sw2 + hh * .04), tTop + armLen * .55];
@@ -678,13 +691,13 @@ var BF = window.BF || (window.BF = {});
         var targetE = elbow.slice(), targetW = wrist.slice();
         var hold = sd === propSide && opts.prop && ['backpack', 'medal', 'gradcap', 'note'].indexOf(opts.prop) < 0;
         if (hold) { targetE = [sd * (sw2 + hh * .12), tTop + armLen * .58]; targetW = [sd * (sw2 + hh * .14), tTop + armLen * .43]; }
-        if (action === 'read' || action === 'cradle') {
+        if (centeredHeld) {
           targetE = [sd * (sw2 + hh * .04), tTop + armLen * .68];
-          targetW = [sd * hh * .15, tTop + armLen * (action === 'read' ? .47 : .63) + sd * hh * .05];
+          targetW = [sd * propScale * .98, tTop + armLen * (action === 'read' ? .47 : .63) + sd * hh * .025];
         } else if (action === 'think' && sd === -1) {
           targetE = [-sw2 - hh * .02, tTop + armLen * .48]; targetW = [-a * .22, chinY + hh * .04];
         } else if (action === 'perform' && sd === propSide) {
-          targetE = [sd * (sw2 + hh * .10), tTop + armLen * .48]; targetW = [sd * a * .42, chinY + hh * .20 + move * hh * .025];
+          targetE = [sd * (sw2 + hh * .28), tTop + armLen * .50]; targetW = [sd * (sw2 + hh * .25), chinY + hh * .20 + move * hh * .025];
         } else if ((action === 'celebrate' || action === 'cheer' || action === 'wave') && (sd === -1 || action !== 'wave')) {
           targetE = [sd * (sw2 + hh * .36), tTop + hh * .12];
           targetW = [sd * (sw2 + hh * (.32 + move * .09)), tTop - hh * .42];
@@ -701,8 +714,16 @@ var BF = window.BF || (window.BF = {});
           targetE = [sd * (sw2 + hh * .20), tTop + armLen * .65];
           targetW = [sd * (chair.halfWidth + chair.radius * .15), -chair.radius * 1.70 + move * hh * .06];
         }
-        elbow = elbow.map(function (v, i) { return U.lerp(v, targetE[i], pose); });
-        wrist = wrist.map(function (v, i) { return U.lerp(v, targetW[i], pose); });
+        var armPose = centeredHeld ? 1 : pose;
+        elbow = elbow.map(function (v, i) { return U.lerp(v, targetE[i], armPose); });
+        wrist = wrist.map(function (v, i) { return U.lerp(v, targetW[i], armPose); });
+        if (heldBounds && !centeredHeld && sd === propSide) {
+          // 이동 중에도 소품 전체를 몸/앞머리 바깥으로 확보합니다.
+          var innerExtent = (sd > 0 ? -heldBounds[0] : heldBounds[2]) * propScale;
+          var edge = Math.max(sw2, hip2, a * (L.tex === 'curly' ? 1.7 : 1.4));
+          if (seated && wrist[1] + heldBounds[3] * propScale > -chair.radius * 2) edge = Math.max(edge, chair.halfWidth + chair.radius * .62);
+          wrist[0] = sd * Math.max(Math.abs(wrist[0]), edge + innerExtent + hh * .08);
+        }
         var shortSleeve = L.outfit === 'kid' && L.age >= 3;
         out += ribbon(start, elbow, wrist, L.armW * .95, L.armW * .82, L.armW * .60, shortSleeve ? L.skin : col.sleeve, sw * .35);
         if (shortSleeve) {
@@ -710,7 +731,9 @@ var BF = window.BF || (window.BF = {});
           out += ribbon(start, [U.lerp(start[0], cuff[0], .5), U.lerp(start[1], cuff[1], .5)], cuff, L.armW * 1.24, L.armW * 1.16, L.armW * 1.06, col.sleeve, sw * .3);
         }
         var angle = Math.atan2(wrist[1] - elbow[1], wrist[0] - elbow[0]) * 180 / Math.PI - 90;
-        out += hand(wrist[0], wrist[1], angle, L.armW * .72, L.skin, sw, action === 'wave' || action === 'welcome');
+        var palm = hand(wrist[0], wrist[1], angle, L.armW * .72, L.skin, sw, action === 'wave' || action === 'welcome');
+        if (heldBounds && (centeredHeld || sd === propSide)) gripHands += palm;
+        else out += palm;
         hands[sd] = wrist;
       });
 
@@ -726,11 +749,11 @@ var BF = window.BF || (window.BF = {});
         out += stroke('M' + f(hx2 + hh * 0.05) + ' ' + f(hy2) + 'q' + f(-hh * 0.02) + ' ' + f(-hh * 0.12) + ' ' + f(-hh * 0.14) + ' ' + f(-hh * 0.06), '#9C6B43', sw * 1.8);
       }
       // 손에 든 물건
-      if (opts.prop && hands[propSide]) {
+      if (heldBounds && hands[propSide]) {
         var held = hands[propSide];
-        var propX = action === 'cradle' || action === 'read' ? 0 : held[0];
-        var propY = action === 'cradle' ? tTop + armLen * .54 : action === 'read' ? tTop + armLen * .36 : held[1];
-        out += propSVG(opts.prop, propX, propY, hh * (action === 'cradle' ? .36 : .23), sw * .8);
+        var propX = centeredHeld ? (hands[-1][0] + hands[1][0]) / 2 : held[0];
+        var propY = centeredHeld ? (hands[-1][1] + hands[1][1]) / 2 - propScale * (action === 'read' ? .55 : .25) : held[1];
+        foreground = '<g class="held-prop" data-prop="' + opts.prop + '">' + propSVG(opts.prop, propX, propY, propScale, sw * .8) + '</g>';
       }
     }
 
@@ -753,7 +776,7 @@ var BF = window.BF || (window.BF = {});
       'C' + f(k * a) + ' ' + f(top0) + ' ' + f(a) + ' ' + f(cy - k * b) + ' ' + f(a) + ' ' + f(cy) +
       'C' + f(a * cheek) + ' ' + f(cy + b * 0.56) + ' ' + f(jaw * a * 0.85) + ' ' + f(bot0 - b * 0.08) + ' 0 ' + f(bot0) +
       'C' + f(-jaw * a * 0.85) + ' ' + f(bot0 - b * 0.08) + ' ' + f(-a * cheek) + ' ' + f(cy + b * 0.56) + ' ' + f(-a) + ' ' + f(cy) + 'Z';
-    out += path(faceD, L.skin, sw);
+    out += path(faceD, L.skin, sw, ' class="person-face"');
     var fc = face(L, 0, cy, a, b, sw, o, opts);
     out += fc.svg;
     if (L.outfit !== 'swaddle') {
@@ -773,7 +796,8 @@ var BF = window.BF || (window.BF = {});
       var nx = a * 1.5, ny = cy - b * 0.9;
       out += circle(nx, ny + b * 0.4, b * 0.13, INK, 0) + line(nx + b * 0.12, ny + b * 0.4, nx + b * 0.12, ny - b * 0.15, INK, sw * 1.3) + stroke('M' + f(nx + b * 0.12) + ' ' + f(ny - b * 0.15) + 'q' + f(b * 0.2) + ' ' + f(b * 0.08) + ' ' + f(b * 0.24) + ' ' + f(b * 0.3), INK, sw * 1.3);
     }
-    return out + '</g></g>';
+    // 소품과 쥔 손은 머리/앞머리까지 모두 그린 다음 맨 앞에 배치합니다.
+    return out + '</g><g class="person-foreground">' + foreground + gripHands + '</g></g>';
   }
 
   // 그림 전체 높이(머리 위까지, cm) — 화면 맞춤용
@@ -790,9 +814,13 @@ var BF = window.BF || (window.BF = {});
     opts = opts || {};
     var w = opts.w || 200, h = opts.h || 260;
     var topCm = Math.max(topOf(o, age), opts.minCm || 0) * 1.08;
-    var scale = (h * 0.9) / topCm;
+    var L = look(o, age, opts);
+    var sideCm = Math.max(L.shoulderW / 2 + L.hh * .78, L.hw * .9 + L.hh * .65);
+    if (L.wheelchair) sideCm = Math.max(sideCm, chairGeometry(L).halfWidth + chairGeometry(L).radius * .62 + L.hh * .55);
+    if (L.cane) sideCm = Math.max(sideCm, L.shoulderW / 2 + L.hh * 1.08);
+    var scale = Math.min((h * 0.9) / topCm, w * .9 / (sideCm * 2));
     var sw = (opts.px || 2.2) / scale;
-    var inner = render(o, age, { sw: sw, mood: opts.mood || 'happy', closedMouth: opts.closedMouth, prop: opts.prop, action: opts.action, expression: opts.expression, phase: opts.phase, yaw: 0 });
+    var inner = render(o, age, { sw: sw, mood: opts.mood || 'happy', closedMouth: opts.closedMouth, prop: opts.prop, action: opts.action, expression: opts.expression, phase: opts.phase, poseMix: opts.poseMix, yaw: 0 });
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '">' +
       (opts.bg ? '<rect width="' + w + '" height="' + h + '" fill="' + opts.bg + '"/>' : '') +
       '<g transform="translate(' + f(w / 2) + ' ' + f(h * 0.95) + ') scale(' + f(scale) + ')">' + inner + '</g></svg>';
