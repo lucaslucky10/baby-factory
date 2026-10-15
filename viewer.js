@@ -38,11 +38,12 @@ var BF = window.BF || (window.BF = {});
     h += '<p class="v-eyebrow">' + U.esc(BF.EVENT.club) + ' 북콘서트에서 설계한 맞춤아기</p>';
     h += '<h1>' + U.esc(rec.name) + '의 일생</h1>';
     h += '<p class="v-sub">' + U.esc(BF.CAREERS[o.career].name) + ' · 최종 키 ' + Math.round(o.height) + 'cm · 기대 수명 ' + o.lifespan + '세</p>';
+    if((rec.version||3)>=3) h += '<p class="v-story-title">'+U.esc(BF.Story.arcFor(o).title)+' <span>· 작은 순간이 이어지는 이야기</span></p>';
     h += '<div class="v-stage"><svg id="v-svg" aria-label="' + U.esc(rec.name) + '의 성장 모습"></svg>' +
       '<div class="v-age"><span id="v-age">0</span><small>세</small></div></div>';
     h += '<div class="v-ctrl"><button class="v-btn" id="v-play" type="button">처음부터 재생</button>' +
       '<input id="v-range" type="range" min="0" max="' + o.endAge + '" step="0.5" value="0" aria-label="나이"></div>';
-    h += '<div class="v-caption" id="v-caption"></div>';
+    h += '<div class="v-caption" id="v-caption"></div><div class="v-chapters" aria-label="시기별 장면 이동">'+[[1,'첫돌'],[9,'작은 발견'],[22.5,'나의 시작'],[42,'다시 해보기'],[66,'이어진 마음']].map(function(a){return '<button type="button" data-jump-age="'+a[0]+'">'+a[1]+'</button>';}).join('')+'</div>';
     h += '</section>';
 
     // 결과 카드 이미지
@@ -82,7 +83,7 @@ var BF = window.BF || (window.BF = {});
       var srcs = [];
       sc.items.forEach(function (it) { if (srcName[it.src] && srcs.indexOf(it.src) < 0) srcs.push(it.src); });
       h += '<li><span class="v-dot">' + Math.floor(sc.age) + '세</span><div>' + srcs.map(function (s) { return '<span class="src ' + s + '">' + srcName[s] + '</span>'; }).join(' ') +
-        sc.items.map(function (it) { return '<p>' + U.esc(it.text) + '</p>'; }).join('') + '</div></li>';
+        sc.items.map(function (it) { return '<p>' + U.esc(it.text) + '</p>' + (it.choice && it.choice.selected ? '<small class="story-selected">나의 선택 · '+U.esc(it.choice.options[it.choice.selected-1])+'</small>':''); }).join('') + '</div></li>';
     });
     h += '</ol></section>';
 
@@ -129,6 +130,7 @@ var BF = window.BF || (window.BF = {});
       caption(shownScene || b.scenes[0]);
       $('v-play').textContent = '처음부터 재생';
     });
+    document.querySelectorAll('[data-jump-age]').forEach(function(button){button.addEventListener('click',function(){clearTimeout(autoPlayTimer);player.stop();var a=+button.dataset.jumpAge;var sc=player.show(a,0);$('v-range').value=a;caption(sc||b.scenes[0]);$('v-play').textContent='처음부터 재생';});});
     // 자동 재생은 화면에 보일 때 한 번
     if (!BF.motion.reduced()) {
       autoPlayTimer = setTimeout(function () { player.play(); $('v-play').textContent = '일시정지'; }, 600);

@@ -654,7 +654,7 @@
     });
     player = new BF.Stage.Player($('life-svg'), {
       W: 1600, H: 900, groundY: 800, figureX: 560, rulerX: 120, topMargin: 280,
-      onScene: function (sc, idx, silent) { addCard(sc); if (!silent) (sc.mood === 'soft' ? Snd.soft : Snd.pop)(); },
+      onScene: function (sc, idx, silent) { addCard(sc); if (!silent) { (sc.mood === 'soft' ? Snd.soft : Snd.pop)(); offerStoryChoice(sc); } },
       onTick: function (age) {
         $('life-age').textContent = Math.floor(age + 0.001);
         $('life-stage').textContent = sim.stageName(age);
@@ -666,10 +666,40 @@
     });
     player.speed = settings.speed || 1;
     player.load(b, b.rec.name);
+    $('btn-pause').disabled=false;
     $('btn-pause').textContent = '일시정지'; $('btn-pause').classList.remove('is-on');
     $('btn-speed').textContent = player.speed > 1 ? '보통 속도' : '2배속'; $('btn-speed').classList.toggle('is-on', player.speed > 1);
     show('s-life');
     player.play();
+  }
+  function offerStoryChoice(sc) {
+    var choice = BF.Story.choiceOf(sc);
+    if (!choice || choice.selected) return;
+    player.paused = true;
+    $('btn-pause').disabled = true;
+    $('btn-pause').textContent = '선택을 기다리는 중';
+    var card = $('life-log').firstElementChild;
+    card.insertAdjacentHTML('beforeend', BF.Story.markup(choice));
+    card.querySelectorAll('[data-story-option]').forEach(function(button){
+      button.addEventListener('click', function(){
+        var oldToken = current.token;
+        current.rec.choices = BF.Story.choices(current.rec);
+        current.rec.choices[choice.id] = +button.dataset.storyOption;
+        var updated = sim.build(current.rec);
+        updated.token = sim.encodeResult(updated.rec);
+        current = updated;
+        var recent=U.store.get('recent',[])||[];
+        U.store.set('recent',recent.map(function(t){return t===oldToken?updated.token:t;}));
+        var speed=player.speed;
+        player.load(updated,updated.rec.name);player.speed=speed;
+        var segment=player.segs.filter(function(s){return s.type==='hold' && s.scene.items.some(function(e){return e.choice && e.choice.id===choice.id;});})[0];
+        player.t=segment.t0;player.lastScene=segment.idx-1;player.cam=null;
+        $('life-log').innerHTML='';
+        $('btn-pause').disabled=false;$('btn-pause').textContent='일시정지';$('btn-pause').classList.remove('is-on');
+        player.play();
+      });
+    });
+    card.querySelector('button').focus({preventScroll:true});
   }
   function addCard(sc) {
     var log = $('life-log');
@@ -678,9 +708,12 @@
     sc.items.forEach(function (it) { if (srcName[it.src] && srcs.indexOf(it.src) < 0) srcs.push(it.src); });
     var el = document.createElement('div');
     el.className = 'card' + (sc.final ? ' final' : '');
-    el.innerHTML = '<div class="card-head"><span class="card-age">' + Math.floor(sc.age) + '세</span>' +
+    var chapter=sc.items.map(function(it){return it.chapter;}).filter(Boolean)[0];
+    var choice=BF.Story.choiceOf(sc);
+    el.innerHTML = (chapter ? '<div class="story-chapter">'+U.esc(chapter)+'</div>' : '') + '<div class="card-head"><span class="card-age">' + Math.floor(sc.age) + '세</span>' +
       srcs.map(function (s) { return '<span class="src ' + s + '">' + srcName[s] + '</span>'; }).join('') + '</div>' +
       sc.items.map(function (it) { return '<p>' + U.esc(it.text) + '</p>'; }).join('');
+    if(choice && choice.selected) el.insertAdjacentHTML('beforeend','<p class="story-selected">나의 선택 · '+U.esc(choice.options[choice.selected-1])+'</p>');
     log.insertBefore(el, log.firstChild);
     while (log.children.length > 5) log.removeChild(log.lastChild);
   }
@@ -785,8 +818,9 @@
     $('confirm-text').textContent = screenId === 's-result' ? '다음 참가자를 맞이할 준비를 해요.' : '지금까지 진행한 내용은 사라져요.';
     var wasRunning = S && S.timer && S.timer.running;
     if (wasRunning) pauseTimer();
+    var playerWasPaused = player && player.paused;
     if (player) player.paused = true;
-    askHome.resume = function () { if (wasRunning) resumeTimer(); if (player) player.paused = false; };
+    askHome.resume = function () { if (wasRunning) resumeTimer(); if (player) player.paused = playerWasPaused; };
     openModal('m-confirm');
   }
 
@@ -913,7 +947,7 @@
     this.textContent = player.speed > 1 ? '보통 속도' : '2배속';
     this.classList.toggle('is-on', player.speed > 1);
   });
-  $('btn-skip').addEventListener('click', function () { if (player) player.skip(); });
+  $('btn-skip').addEventListener('click', function () { if (player) { $('btn-pause').disabled=false;player.skip(); } });
 
   $('btn-copy').addEventListener('click', copyURL);
   $('btn-print').addEventListener('click', printLabel);

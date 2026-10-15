@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>태어난 다음의 이야기 · 베이비 팩토리</title>
+<link rel="stylesheet" href="illustrated.css?v=20261015-illustrated">
+<link rel="stylesheet" href="preview.css?v=20261015-illustrated">
+</head><body>
+<header class="p-top"><a href="index.html" class="p-brand"><span aria-hidden="true">✳</span> 베이비 팩토리</a><a href="index.html">나의 아기 설계하기 <span aria-hidden="true">↗</span></a></header>
+<main class="p-wrap">
+  <div class="p-intro"><div><p class="p-kicker">A LIFE, IN LITTLE MOMENTS</p><h1>태어난 다음의 이야기</h1><p>주문서에 없던 취향, 우연히 만난 친구.<br class="mobile-break"> 작은 선택들이 모여 한 사람의 삶이 돼요.</p></div><button type="button" id="new-life">다른 삶 만나기 <span aria-hidden="true">↻</span></button></div>
+  <section class="p-book" aria-label="인생 이야기">
+    <div class="p-scene"><svg id="scene" role="img" aria-label="주인공의 성장 장면"></svg><span class="p-location" id="location">작은 교실</span><div class="p-age"><b id="age">9</b><span>살의 하루</span></div></div>
+    <div class="p-page"><div class="p-page-top"><span id="chapter-count">01 / 04</span><span>한 사람의 작은 세계</span></div><p class="p-kicker" id="arc-tag">오늘의 에피소드</p><h2 id="arc-title"></h2><div id="caption" class="p-caption" aria-live="polite"></div><div id="choice"></div><div class="p-keepsake"><span aria-hidden="true">◇</span><div><small>이 삶에 남는 물건</small><b id="keepsake"></b></div></div><div class="p-navigation"><button type="button" id="prev" aria-label="이전 장면">←</button><button type="button" id="play">이어서 재생</button><button type="button" id="next" aria-label="다음 장면">→</button></div></div>
+  </section>
+  <div class="p-timeline"><span>첫 페이지</span><input id="age-range" type="range" min="0" max="90" value="9" step=".1" aria-label="이야기 나이"><span>마지막 페이지</span></div>
+  <nav class="p-bookmarks" aria-label="이야기 책갈피"><button data-age="4">작은 취향</button><button data-age="15.8">첫 갈림길</button><button data-age="38.5">계획과 다른 날</button><button data-age="60.2">남기고 싶은 것</button><button data-age="end">마지막 편지</button></nav>
+  <footer class="p-bottom"><p>네 편의 이야기 · 세 번의 갈림길 · 정답 없는 선택</p><a id="replay-link" href="index.html">이 삶의 결과 카드 보기 ↗</a></footer>
+  <p class="p-note">이 페이지는 예시 인생을 체험하는 공간이에요. 맞춤아기 설계와 유전자 토론은 본 게임에서 이어집니다.</p>
+</main>
+<script src="util.js"></script><script src="data.js"></script><script src="story.js"></script><script src="world.js"></script><script src="sim.js"></script><script src="person.js"></script><script src="stage.js"></script><script src="preview.js"></script>
+</body></html>

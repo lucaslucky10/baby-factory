@@ -1,4 +1,4 @@
-const specs={ball:'cheer',book:'read',pencil:'read',mic:'perform',stetho:'idle',mouse:'idle',gavel:'idle',thread:'idle',money:'idle',briefcase:'wave',trophy:'celebrate',bouquet:'welcome',baby:'cradle'};
+const specs={ball:'cheer',book:'read',pencil:'read',mic:'perform',stetho:'idle',mouse:'idle',gavel:'idle',thread:'idle',money:'idle',briefcase:'wave',trophy:'celebrate',bouquet:'welcome',baby:'cradle',plant:'idle',letter:'read',camera:'welcome'};
 document.querySelector('#check').onclick=async function(){this.disabled=true;let failures=[],count=0;const box=document.querySelector('#probe'),report=document.querySelector('#report');
 const overlap=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>.5 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>.5;
 for(const sex of ['F','M','N'])for(const age of [1,7,23,36,70])for(const support of ['none','wheel','cane'])for(const hair of ['straight','curly'])for(const poseMix of [0,.5,1])for(const phase of [0,.7,2.3])for(const [prop,action] of Object.entries(specs)){
