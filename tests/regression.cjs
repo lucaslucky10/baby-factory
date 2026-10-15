@@ -7,7 +7,8 @@ const cp = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 function load(legacy = false) {
   const ctx = vm.createContext({ window: {}, console, btoa, atob, performance, requestAnimationFrame: () => 1, cancelAnimationFrame() {} });
-  for (const file of ['util.js', 'data.js', 'sim.js', 'person.js', 'stage.js']) {
+  const files = legacy ? ['util.js','data.js','sim.js','person.js','stage.js'] : ['util.js','data.js','story.js','world.js','sim.js','person.js','stage.js'];
+  for (const file of files) {
     const code = legacy ? cp.execFileSync('git', ['show', '9ed8542:' + file], { cwd: root, encoding: 'utf8' }) : fs.readFileSync(path.join(root, file), 'utf8');
     vm.runInContext(code, ctx, { filename: file });
   }
@@ -53,7 +54,7 @@ for (let seed = 0; seed < 1000; seed++) {
     if (!(was.o.kids && !was.o.partner) && !sensoryCorrected) equal(stableScenes(now.scenes), stableScenes(was.scenes), 'legacy QR event structure');
     assert.equal(BF.sim.encodeResult(decoded), token, 'legacy re-encoding');
     const fresh = BF.sim.decodeResult(BF.sim.encodeResult(rec));
-    assert.equal(fresh.version, 2);
+    assert.equal(fresh.version, 3);
     const built = BF.sim.build(rec), replay = BF.sim.build(fresh);
     for (const key of ['o', 'found', 'spent', 'items', 'scenes']) equal(built[key], replay[key], 'current QR ' + key);
     assert(built.o.disorders.length <= 2);
@@ -244,4 +245,15 @@ assert.equal(player.t, 2); assert.equal(player.motionTime, 100); assert.equal(fr
 BF.motion.reduced = () => true;
 player.fxEl = { innerHTML: 'old particles' }; player.burst('happy');
 assert.equal(player.fxEl.innerHTML, '');
+// A pending decision pauses on its complete thoughtful pose, including at entry.
+const decisionScene={items:[{text:'어떻게 할까요?',choice:{id:0,selected:0,options:['함께','혼자']}}],mood:'happy',prop:null};
+assert.equal(BF.Stage.performanceFor(decisionScene).action,'think');
+const deciding=new BF.Stage.Player({}, {W:1000,H:900,groundY:800,figureX:500,rulerX:100});
+Object.assign(deciding,{o:model,figEl:{},rulerEl:{},bdEls:[],t:0});
+BF.motion.reduced=()=>false;
+deciding.draw(16,0,{type:'hold',t0:0,t1:5,scene:decisionScene});
+const entry=deciding.figEl.innerHTML;
+deciding.t=1;deciding.cam=null;deciding.draw(16,0,{type:'hold',t0:0,t1:5,scene:decisionScene});
+assert.equal(deciding.figEl.innerHTML,entry,'decision pose must not be frozen halfway into its entrance');
+BF.motion.reduced=motionOriginal;
 console.log(JSON.stringify({ samples: 100000, counts, perType, qrRecords: 4000, familyLives, singles, parents, blindLives, deafMusicLives, renderCount, poseRenderCount, mobilityStories, sceneMappings: performances.length, checks: 'PASS' }, null, 2));

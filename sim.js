@@ -5,7 +5,7 @@ var BF = window.BF || (window.BF = {});
 
 (function (BF) {
   var U = BF.util;
-  var DATA_VERSION = 2;
+  var DATA_VERSION = 3;
 
   function traitIndex(id) { for (var i = 0; i < BF.TRAITS.length; i++) if (BF.TRAITS[i].id === id) return i; return -1; }
   function disorderById(id) { for (var i = 0; i < BF.DISORDERS.length; i++) if (BF.DISORDERS[i].id === id) return BF.DISORDERS[i]; return null; }
@@ -183,7 +183,7 @@ var BF = window.BF || (window.BF = {});
 
   // ---------------- 인생 이야기 ----------------
   // src: bought(주문한 유전자) · natural(자연) · edit(편집) · miss(주문했지만 다르게) · life(삶)
-  function lifeEvents(o, name) {
+  function lifeEvents(o, name, rec) {
     var ev = [];
     var N = U.callName(name);
     var Nn = U.josa(N, '은', '는'), Ng = U.josa(N, '이', '가');
@@ -381,13 +381,15 @@ var BF = window.BF || (window.BF = {});
     }
     add(o.endAge, ending, { src: 'life', prio: 9, mood: 'soft', final: true });
 
+    if ((!rec || (rec.version || DATA_VERSION) >= 3) && BF.Story) ev = BF.Story.apply(ev, o, rec);
+
     // 같은 시기 사건 합치기: 0.9년 안의 사건은 한 장면, 장면당 최대 2줄
     ev.sort(function (a, b) { return a.age - b.age || b.prio - a.prio; });
     var scenes = [];
     ev.forEach(function (e) {
       if (e.age > o.endAge) return;
       var last = scenes[scenes.length - 1];
-      var near = last && !e.final && !last.final && e.age - last.age < 0.9;
+      var near = last && !e.final && !last.final && !e.choice && !last.items.some(function(it){return it.choice;}) && e.age - last.age < 0.9;
       if (near && last.items.length < 2) last.items.push(e);
       else if (near) {
         // 우선순위가 낮은 줄을 밀어냄
@@ -448,6 +450,7 @@ var BF = window.BF || (window.BF = {});
     var nb = U.utf8Encode(rec.name || '').slice(0, 24);
     w.put(nb.length, 5);
     nb.forEach(function (b) { w.put(b, 8); });
+    if ((rec.version || DATA_VERSION) >= 3) [0,1,2].forEach(function(i){var v=rec.choices && rec.choices[i];w.put(v===1||v===2?v:0,2);});
     var bytes = w.bytes();
     bytes.push(checksum(bytes));
     return 'b' + U.b64url(bytes);
@@ -463,7 +466,7 @@ var BF = window.BF || (window.BF = {});
       if (checksum(bytes) !== sum) return null;
       var rd = new BitR(bytes);
       var ver = rd.get(4);
-      if (ver !== 1 && ver !== DATA_VERSION) return null;
+      if (ver !== 1 && ver !== 2 && ver !== DATA_VERSION) return null;
       var rec = { version: ver, guarantee: rd.get(1) === 1, seed: rd.get(24), sel: [], edits: [] };
       BF.TRAITS.forEach(function (t) { var v = rd.get(2); rec.sel.push(v < t.opts.length ? v : 0); });
       BF.DISORDERS.forEach(function () { rec.edits.push(rd.get(1) === 1); });
@@ -473,6 +476,7 @@ var BF = window.BF || (window.BF = {});
       var n = rd.get(5), nb = [];
       for (var i = 0; i < n; i++) nb.push(rd.get(8));
       rec.name = U.utf8Decode(nb) || '아기';
+      if (ver >= 3) {rec.choices=[rd.get(2),rd.get(2),rd.get(2)];if(rec.choices.some(function(v){return v>2;}))return null;}
       return rec;
     } catch (e) { return null; }
   }
@@ -482,7 +486,7 @@ var BF = window.BF || (window.BF = {});
     var found = screen(rec.seed, rec.guarantee, rec.version);
     var o = resolve({ seed: rec.seed, sel: rec.sel, edits: rec.edits, guarantee: rec.guarantee, version: rec.version });
     var spent = cost(rec.sel, rec.edits, found);
-    return { rec: rec, found: found, o: o, spent: spent, items: receiptItems(rec.sel, rec.edits, found), scenes: lifeEvents(o, rec.name) };
+    return { rec: rec, found: found, o: o, spent: spent, items: receiptItems(rec.sel, rec.edits, found), scenes: lifeEvents(o, rec.name, rec) };
   }
 
   BF.sim = {

@@ -7,93 +7,7 @@ var BF = window.BF || (window.BF = {});
   function f(n) { return Math.round(n * 100) / 100; }
 
   // 시기별 배경 (화면 좌표). 벽·바닥은 전체 폭(W), 소품은 사람(fx) 기준으로 배치해 겹치지 않게.
-  function backdrops(W, H, gy, name, fx) {
-    var s = '', i;
-    var nm = U.esc(name || '');
-    function rect(x, y, w, h, fill, extra) { return '<rect x="' + f(x) + '" y="' + f(y) + '" width="' + f(w) + '" height="' + f(h) + '" fill="' + fill + '"' + (extra || '') + '/>'; }
-    function ln(x1, y1, x2, y2, w) { return '<line x1="' + f(x1) + '" y1="' + f(y1) + '" x2="' + f(x2) + '" y2="' + f(y2) + '" stroke="' + INK + '" stroke-width="' + (w || 3) + '"/>'; }
-    var st = ' stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"';
-    var mono = 'font-family="Nanum Gothic Coding, monospace"';
-
-    // 0 아기방 (0~5세)
-    s += '<g data-scene="0">' + rect(0, 0, W, gy, '#FCE6EE');
-    for (i = 0; i < 44; i++) s += '<circle cx="' + ((i * 137) % W) + '" cy="' + (30 + ((i * 89) % (gy - 60))) + '" r="7" fill="#F9CFDC"/>';
-    var wx0 = fx + 190, wy0 = gy * 0.16;
-    s += rect(wx0, wy0, 200, 230, '#2D3A66', st + ' rx="96"');
-    s += '<circle cx="' + f(wx0 + 70) + '" cy="' + f(wy0 + 80) + '" r="24" fill="#FFE9A8"/><circle cx="' + f(wx0 + 82) + '" cy="' + f(wy0 + 72) + '" r="21" fill="#2D3A66"/>';
-    s += '<path d="M' + f(wx0 + 140) + ' ' + f(wy0 + 140) + 'l4 10 10 2-8 7 2 10-8-5-8 5 2-10-8-7 10-2z" fill="#FFE9A8"/>';
-    var my = gy * 0.12;
-    s += ln(fx, 0, fx, my) + ln(fx - 90, my, fx + 90, my);
-    [[-90, '#FFD23F'], [0, '#8EC9F0'], [90, '#FF6F91']].forEach(function (m) { s += ln(fx + m[0], my, fx + m[0], my + 50, 2) + '<circle cx="' + f(fx + m[0]) + '" cy="' + f(my + 66) + '" r="16" fill="' + m[1] + '"' + st + '/>'; });
-    var cx0 = fx + 240, cw = 300, ch = 160;
-    s += rect(cx0, gy - ch, cw, ch * 0.75, 'none', st);
-    for (i = 1; i < 8; i++) s += ln(cx0 + cw * i / 8, gy - ch, cx0 + cw * i / 8, gy - ch * 0.25);
-    s += rect(cx0 - 8, gy - ch - 10, 16, ch + 10, '#FFFFFF', st + ' rx="6"') + rect(cx0 + cw - 8, gy - ch - 10, 16, ch + 10, '#FFFFFF', st + ' rx="6"');
-    s += rect(0, gy, W, H - gy, '#F2D7AE') + '<g stroke="#E2C090" stroke-width="3">';
-    for (i = 0; i < 14; i++) s += '<line x1="' + (i * 160) + '" y1="' + gy + '" x2="' + (i * 160 - 60) + '" y2="' + H + '"/>';
-    s += '</g></g>';
-
-    // 1 학교 (6~18세)
-    s += '<g data-scene="1" opacity="0">' + rect(0, 0, W, gy, '#E7F1E2') + rect(0, gy - 70, W, 70, '#CFE2C6');
-    var bx = fx - 130, bw = 470, bt = gy * 0.13, bh = gy * 0.33;
-    s += rect(bx - 14, bt - 14, bw + 28, bh + 28, '#B98B5E', st + ' rx="10"') + rect(bx, bt, bw, bh, '#2F5D50', st);
-    s += '<text x="' + f(bx + 30) + '" y="' + f(bt + 62) + '" ' + mono + ' font-size="34" fill="#F4F1DE" opacity="0.9">' + (nm ? nm + ' 화이팅!' : '오늘도 화이팅!') + '</text>';
-    s += '<text x="' + f(bx + 30) + '" y="' + f(bt + 118) + '" ' + mono + ' font-size="26" fill="#F4F1DE" opacity="0.75">급식: 짜장면</text>';
-    s += '<text x="' + f(bx + 30) + '" y="' + f(bt + 168) + '" ' + mono + ' font-size="26" fill="#F4F1DE" opacity="0.6">1 + 1 = 2</text>';
-    var ckx = fx - 250, cky = gy * 0.42; // 왼쪽 위 나이 표시판에 가리지 않도록 아래로
-    s += '<circle cx="' + f(ckx) + '" cy="' + f(cky) + '" r="46" fill="#FFFFFF"' + st + '/>' + ln(ckx, cky, ckx, cky - 30, 4) + ln(ckx, cky, ckx + 22, cky + 8, 4);
-    var dx = fx + 240;
-    s += rect(dx, gy - 120, 170, 22, '#D8B07A', st + ' rx="4"') + rect(dx + 14, gy - 98, 14, 98, '#9AA5B8', st) + rect(dx + 142, gy - 98, 14, 98, '#9AA5B8', st);
-    s += rect(0, gy, W, H - gy, '#C7D5DE') + '<g stroke="#B3C3CE" stroke-width="3">';
-    for (i = 0; i < 24; i++) s += '<line x1="' + (i * 90) + '" y1="' + gy + '" x2="' + (i * 90) + '" y2="' + H + '"/>';
-    s += '</g></g>';
-
-    // 2 청년: 도시가 보이는 창 (19~29세)
-    s += '<g data-scene="2" opacity="0">' + rect(0, 0, W, gy, '#FFF1D0');
-    var cwx = fx - 120, cww = 520, cwt = gy * 0.1, cwh = gy * 0.48;
-    s += rect(cwx, cwt, cww, cwh, '#9FD3F5', st + ' rx="8"');
-    [[0, 0.55], [0.12, 0.35], [0.26, 0.62], [0.4, 0.28], [0.55, 0.5], [0.7, 0.38], [0.84, 0.58]].forEach(function (b) {
-      var x = cwx + cww * b[0], w = cww * 0.13, top = cwt + cwh * b[1];
-      s += rect(x, top, w, cwt + cwh - top, '#34466F');
-      for (var yy = top + 14; yy < cwt + cwh - 14; yy += 26) for (var xx = x + 10; xx < x + w - 10; xx += 22) if (((xx * 7 + yy * 3) | 0) % 3) s += rect(xx, yy, 9, 12, '#FFD23F', ' opacity="0.85"');
-    });
-    s += rect(cwx, cwt, cww, cwh, 'none', st + ' rx="8"') + ln(cwx + cww / 2, cwt, cwx + cww / 2, cwt + cwh, 5);
-    var pox = fx - 330, poy = gy * 0.36, rot = ' transform="rotate(-4 ' + f(pox + 55) + ' ' + f(poy + 75) + ')"';
-    s += rect(pox, poy, 110, 150, '#FF6F91', st + rot) + '<text x="' + f(pox + 55) + '" y="' + f(poy + 88) + '" text-anchor="middle" font-family="Bagel Fat One, sans-serif" font-size="30" fill="#FFFDF5"' + rot + '>LIVE</text>';
-    s += rect(0, gy, W, H - gy, '#D9D3C7') + '</g>';
-
-    // 3 장년: 거실 (30~61세)
-    s += '<g data-scene="3" opacity="0">' + rect(0, 0, W, gy, '#E4EBF6');
-    [[-180, 0.14, 120, 90, '#FFD23F'], [-40, 0.1, 90, 120, '#8EC9F0'], [90, 0.16, 110, 80, '#FF6F91']].forEach(function (p) {
-      s += rect(fx + p[0], gy * p[1], p[2], p[3], '#FFFDF5', st + ' rx="4"') + rect(fx + p[0] + 12, gy * p[1] + 12, p[2] - 24, p[3] - 24, p[4], ' opacity="0.8"');
-    });
-    var sx = fx + 250;
-    s += rect(sx, gy - 150, 300, 110, '#7FB7A4', st + ' rx="34"') + rect(sx - 20, gy - 110, 340, 70, '#6AA592', st + ' rx="24"');
-    var px = fx - 260;
-    s += '<path d="M' + f(px - 34) + ' ' + f(gy) + 'l8-70h52l8 70z" fill="#D9825B"' + st + '/>';
-    [[-40, -150, -20], [0, -190, 0], [40, -150, 20], [-20, -120, -30], [24, -125, 30]].forEach(function (l) {
-      s += '<ellipse cx="' + f(px + l[0]) + '" cy="' + f(gy + l[1]) + '" rx="22" ry="48" fill="#5DBB63" transform="rotate(' + l[2] + ' ' + f(px + l[0]) + ' ' + f(gy + l[1]) + ')"' + st + '/>';
-    });
-    s += rect(0, gy, W, H - gy, '#D6B48A') + '<g stroke="#C49D70" stroke-width="3">';
-    for (i = 0; i < 12; i++) s += '<line x1="0" y1="' + (gy + 22 + i * 26) + '" x2="' + W + '" y2="' + (gy + 22 + i * 26) + '"/>';
-    s += '</g></g>';
-
-    // 4 노년: 노을 공원 (62세~)
-    s += '<g data-scene="4" opacity="0"><defs><linearGradient id="bf-sunset" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC9A3"/><stop offset="1" stop-color="#FFE6C2"/></linearGradient></defs>' + rect(0, 0, W, gy, 'url(#bf-sunset)');
-    s += '<circle cx="' + f(fx + 120) + '" cy="' + f(gy - 40) + '" r="120" fill="#FF9F68" opacity="0.8"/>';
-    [[-280, 1.0], [330, 1.25], [480, 0.9]].forEach(function (t) {
-      var tx = fx + t[0], sc = t[1];
-      s += '<rect x="' + f(tx - 12 * sc) + '" y="' + f(gy - 170 * sc) + '" width="' + f(24 * sc) + '" height="' + f(170 * sc) + '" fill="#9C6B43"' + st + '/>';
-      s += '<circle cx="' + f(tx) + '" cy="' + f(gy - 200 * sc) + '" r="' + f(80 * sc) + '" fill="#7CC47F"' + st + '/>';
-    });
-    var bnx = fx + 240;
-    s += rect(bnx, gy - 90, 240, 20, '#B5835A', st + ' rx="6"') + rect(bnx, gy - 130, 240, 18, '#B5835A', st + ' rx="6"') + rect(bnx + 20, gy - 70, 14, 70, '#59647A', st) + rect(bnx + 206, gy - 70, 14, 70, '#59647A', st);
-    s += '<path d="M' + f(fx + 250) + ' 140q14-12 28 0q14-12 28 0" fill="none" stroke="' + INK + '" stroke-width="3"/><path d="M' + f(fx + 320) + ' 100q10-9 20 0q10-9 20 0" fill="none" stroke="' + INK + '" stroke-width="3"/>';
-    s += rect(0, gy, W, H - gy, '#A9D49F') + '</g>';
-
-    s += '<line x1="0" y1="' + gy + '" x2="' + W + '" y2="' + gy + '" stroke="' + INK + '" stroke-width="4"/>';
-    return s;
-  }
+  function backdrops(W,H,gy,name,fx) { return BF.World.backdrops(W,H,gy,name,fx); }
   var SCENE_AGES = [[0, 5.5], [5.5, 18.5], [18.5, 29.5], [29.5, 61.5], [61.5, 200]];
   function sceneOpacity(i, age) {
     // 나이가 머무는 동안 반투명 배경 두 장이 고정되는 일이 없도록
@@ -106,6 +20,8 @@ var BF = window.BF || (window.BF = {});
   // 이야기 데이터/QR은 그대로 두고, 실제 장면의 내용으로 연기를 고릅니다.
   function performanceFor(scene) {
     if (!scene) return { action: 'idle', expression: 'smile', prop: null, mood: 'happy' };
+    var choice = BF.Story && BF.Story.choiceOf(scene);
+    if (choice && !choice.selected) return { action:'think',expression:'thoughtful',prop:null,mood:'soft' };
     var text = scene.items.map(function (it) { return it.text; }).join(' ');
     var prop = scene.prop, action = 'idle', expression = 'smile';
     var propItem = scene.items.filter(function (it) { return it.prop === prop; })[0];
@@ -119,6 +35,9 @@ var BF = window.BF || (window.BF = {});
     }
     else if (/첫돌/.test(propText)) { action = 'idle'; expression = 'delighted'; }
     else if (prop === 'baby') { action = 'cradle'; expression = 'gentle'; }
+    else if (prop === 'letter') { action = 'read'; expression = 'gentle'; }
+    else if (prop === 'plant') { action = 'idle'; expression = 'gentle'; }
+    else if (prop === 'camera') { action = 'welcome'; expression = 'focused'; }
     else if (prop === 'book' || prop === 'pencil') { action = 'read'; expression = 'focused'; }
     else if (wedding) { action = 'speak'; expression = 'smile'; }
     else if (prop === 'mic' || prop === 'note') { action = 'perform'; expression = 'singing'; }
@@ -155,7 +74,7 @@ var BF = window.BF || (window.BF = {});
       var gap = sc.age - cur;
       if (gap > 0) { var d = Math.max(0.35, gap * 0.12); segs.push({ type: 'move', t0: t, t1: t + d, a0: cur, a1: sc.age }); t += d; }
       var chars = sc.items.reduce(function (n, it) { return n + it.text.length; }, 0);
-      var hold = sc.final ? 4.8 : 1.6 + (sc.items.length - 1) * 0.5 + Math.min(1.4, chars / 55);
+      var hold = sc.final ? 6.2 : Math.max(2.8, Math.min(6.5, 1.4 + chars / 19));
       segs.push({ type: 'hold', t0: t, t1: t + hold, a0: sc.age, a1: sc.age, scene: sc, idx: i });
       t += hold; cur = sc.age;
     });
@@ -186,18 +105,20 @@ var BF = window.BF || (window.BF = {});
     var s = (this.gy - this.top) / this.cam;
     this.lastTop = topCm; this.lastScale = s;
     var holding = seg && seg.type === 'hold' && seg.scene;
+    var decision = holding && BF.Story && BF.Story.choiceOf(seg.scene);
     var acting = performanceFor(holding ? seg.scene : null);
     var still = BF.motion.reduced();
     var tt = still ? 0 : now / 1000;
-    var blink = !still && (tt % 4.7) > 4.55;
-    var yaw = Math.sin(tt * 0.85) * 0.25;
+    var blinkClock = (tt + (o.seed % 19) * .17) % 5.3;
+    var blink = !still && (blinkClock > 5.14 || blinkClock > 4.82 && blinkClock < 4.89);
+    var yaw = Math.sin(tt * 0.65) * 0.22;
     var breathe = still ? 0 : Math.sin(tt * 1.8);
     var support = BF.Person.look(o, age, {});
     var bounce = !still && !support.wheelchair && !support.cane && holding && acting.action === 'celebrate' ? Math.sin(U.clamp((this.t - seg.t0) / 0.8, 0, 1) * Math.PI) * 3 : 0;
     var inner = BF.Person.render(o, age, {
       sw: 3 / s, blink: blink, yaw: yaw, breathe: breathe, phase: still ? undefined : tt,
       mood: acting.mood, expression: acting.expression, action: acting.action, prop: acting.prop, outfit: acting.outfit,
-      poseMix: !holding || still ? 1 : U.smooth(0, 0.5, this.t - seg.t0) * (seg.t1 == null ? 1 : 1 - U.smooth(seg.t1 - 0.35, seg.t1, this.t))
+      poseMix: !holding || still || decision && !decision.selected ? 1 : U.smooth(0, 0.5, this.t - seg.t0) * (seg.t1 == null ? 1 : 1 - U.smooth(seg.t1 - 0.35, seg.t1, this.t))
     });
     this.figEl.innerHTML = '<g transform="translate(' + f(this.fx) + ' ' + f(this.gy - bounce) + ') scale(' + f(s) + ')">' + inner + '</g>';
     for (var i = 0; i < this.bdEls.length; i++) {
@@ -209,7 +130,7 @@ var BF = window.BF || (window.BF = {});
     var H = BF.sim.heightAt(o, age);
     var r = '', x = this.rx, gy = this.gy;
     var maxCm = this.cam * 1.05;
-    r += '<rect x="' + f(x - 34) + '" y="' + f(this.top - 30) + '" width="68" height="' + f(gy - this.top + 30) + '" rx="10" fill="#FFF6DA" stroke="' + INK + '" stroke-width="4"/>';
+    r += '<rect x="' + f(x - 34) + '" y="' + f(this.top - 30) + '" width="68" height="' + f(gy - this.top + 30) + '" rx="10" fill="#FFF9EC" stroke="#BBA88D" stroke-width="2"/>';
     var step = maxCm > 150 ? 10 : 5, lab = maxCm > 150 ? 20 : 10;
     for (var cm = 0; cm <= maxCm; cm += step) {
       var y = gy - cm * s;
@@ -220,8 +141,8 @@ var BF = window.BF || (window.BF = {});
     }
     var hy = gy - H * s;
     var seated = BF.Person.look(o, age, {}).wheelchair;
-    if (!seated) r += '<line x1="' + f(x + 34) + '" y1="' + f(hy) + '" x2="' + f(this.fx - 20) + '" y2="' + f(hy) + '" stroke="#EF4B3C" stroke-width="3" stroke-dasharray="10 8"/>';
-    r += '<g transform="translate(' + f(x + 40) + ' ' + f(seated ? this.top + 12 : hy - 44) + ')"><rect width="' + (seated ? 190 : 150) + '" height="40" rx="10" fill="#EF4B3C" stroke="' + INK + '" stroke-width="3"/><text x="' + (seated ? 95 : 75) + '" y="28" text-anchor="middle" font-family="Nanum Gothic Coding, monospace" font-weight="700" font-size="22" fill="#FFFDF5">' + (seated ? '신장 ' : '') + H.toFixed(1) + 'cm</text>' + (seated ? '<text x="95" y="64" text-anchor="middle" font-family="sans-serif" font-size="20" fill="' + INK + '">현재 앉은 모습</text>' : '') + '</g>';
+    if (!seated) r += '<line x1="' + f(x + 34) + '" y1="' + f(hy) + '" x2="' + f(this.fx - 20) + '" y2="' + f(hy) + '" stroke="#BA8E74" stroke-width="3" stroke-dasharray="10 8"/>';
+    r += '<g transform="translate(' + f(x + 40) + ' ' + f(seated ? this.top + 12 : hy - 44) + ')"><rect width="' + (seated ? 190 : 150) + '" height="40" rx="10" fill="#9B6C5C" stroke="' + INK + '" stroke-width="3"/><text x="' + (seated ? 95 : 75) + '" y="28" text-anchor="middle" font-family="Nanum Gothic Coding, monospace" font-weight="700" font-size="22" fill="#FFFDF5">' + (seated ? '신장 ' : '') + H.toFixed(1) + 'cm</text>' + (seated ? '<text x="95" y="64" text-anchor="middle" font-family="sans-serif" font-size="20" fill="' + INK + '">현재 앉은 모습</text>' : '') + '</g>';
     this.rulerEl.innerHTML = r;
     this.age = age;
     this.onTick(age, H);

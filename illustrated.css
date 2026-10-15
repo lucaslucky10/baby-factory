@@ -1,0 +1,26 @@
+/* Illustration edition: quiet frames let the face and story do the work. */
+#s-life .life-hud{background:#fffaf0e8;border:2px solid #cabb9f;box-shadow:0 8px 28px #6d543914;border-radius:25px;color:#514735}
+#s-life .card{background:#fffaf1f5;border:1.5px solid #d1c3ac;box-shadow:0 6px 22px #68533e12;border-radius:22px;padding:22px 24px}
+#s-life .card.final{background:#f5e5bb}
+#s-life .card p{line-height:1.65;color:#4b4542}
+#s-life .card+.card{opacity:.55}
+#s-life .card-head{margin-bottom:9px}
+.story-chapter{font:700 14px/1.5 sans-serif;letter-spacing:.06em;color:#8a7559;margin-bottom:10px}
+.story-choice{display:grid;gap:10px;margin-top:18px}
+.story-choice-label{font-size:16px;font-weight:700;color:#577c70}
+.story-choice button{display:flex;align-items:center;gap:13px;min-height:58px;text-align:left;padding:12px 16px;border:1px solid #c0d0c4;border-radius:13px;background:#f0f5eb;color:#344b43;font-family:inherit;font-size:18px;font-weight:600;line-height:1.5;cursor:pointer;transition:background .18s,transform .18s}
+.story-choice button:hover{background:#e0ecdc;transform:translateY(-2px)}
+.story-choice button:focus-visible,.v-chapters button:focus-visible{outline:3px solid #527f76;outline-offset:3px}
+.story-choice button span{font:600 12px monospace;opacity:.65}
+.story-choice button b{margin-left:auto;font-size:21px}
+.story-choice small{font-size:13px;line-height:1.6;color:#867965}
+.story-selected{font-size:14px!important;padding-top:12px;color:#55796c!important;border-top:1px dashed #c7d3c2}
+.v-story-title{color:#5f8175;font-weight:700;font-size:16px}
+.v-story-title span{color:#948775;font-size:12px;font-weight:400}
+.v-stage{border:1px solid #cbbca6!important;box-shadow:0 12px 45px #65513c12!important;border-radius:24px!important;overflow:hidden}
+.v-caption{background:#fffaf1!important;border:1px solid #ddcfb8!important;border-radius:16px!important;line-height:1.8!important;color:#514a40!important}
+.v-chapters{display:flex;gap:7px;overflow:auto;padding:15px 2px 8px;scrollbar-width:thin}
+.v-chapters button{flex:none;padding:8px 12px;border:1px solid #d4c9b6;border-radius:20px;background:#fffcf5;color:#746853;font-size:12px;cursor:pointer}
+.v-chapters button:hover{background:#ece9da}
+.life-ctrl button:disabled{opacity:.6;cursor:default}
+@media(prefers-reduced-motion:reduce){.story-choice button{transition:none}.story-choice button:hover{transform:none}}
